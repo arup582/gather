@@ -1,0 +1,7 @@
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+app:
+  seed-password: ${DEV_SEED_PASSWORD}
