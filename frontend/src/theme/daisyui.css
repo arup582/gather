@@ -1,0 +1,28 @@
+/* Import only the daisyUI pieces we use; npm supplies these locally, without a CDN or Tailwind runtime. */
+@layer daisyui;
+@import 'daisyui/base/reset.css' layer(daisyui);
+@import 'daisyui/base/rootcolor.css' layer(daisyui);
+@import 'daisyui/base/rootscrolllock.css' layer(daisyui);
+@import 'daisyui/components/navbar.css' layer(daisyui);
+@import 'daisyui/components/menu.css' layer(daisyui);
+@import 'daisyui/components/hero.css' layer(daisyui);
+@import 'daisyui/components/footer.css' layer(daisyui);
+@import 'daisyui/components/button.css' layer(daisyui);
+@import 'daisyui/components/input.css' layer(daisyui);
+@import 'daisyui/components/textarea.css' layer(daisyui);
+@import 'daisyui/components/select.css' layer(daisyui);
+@import 'daisyui/components/toggle.css' layer(daisyui);
+@import 'daisyui/components/radio.css' layer(daisyui);
+@import 'daisyui/components/checkbox.css' layer(daisyui);
+@import 'daisyui/components/range.css' layer(daisyui);
+@import 'daisyui/components/table.css' layer(daisyui);
+@import 'daisyui/components/card.css' layer(daisyui);
+@import 'daisyui/components/alert.css' layer(daisyui);
+@import 'daisyui/components/badge.css' layer(daisyui);
+@import 'daisyui/components/loading.css' layer(daisyui);
+@import 'daisyui/components/modal.css' layer(daisyui);
+@import 'daisyui/components/fieldset.css' layer(daisyui);
+@import 'daisyui/components/link.css' layer(daisyui);
+@import 'daisyui/theme/emerald.css' layer(daisyui);
+@import 'daisyui/theme/corporate.css' layer(daisyui);
+@import 'daisyui/theme/night.css' layer(daisyui);

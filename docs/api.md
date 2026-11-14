@@ -36,6 +36,7 @@ All routes below are relative to `/api`.
 | POST | `/manage/events/{eventId}/registrations/{registrationId}/check-in` | Event owner/admin, active registration, event in progress; attendance record, `200` |
 | GET | `/manage/events/{id}/attendance` | Event owner/admin; attendance array |
 | GET | `/admin/users?page=0&size=20` | Admin; user page |
+| POST | `/admin/users` | Admin + CSRF; `{email, displayName, password, role}` → enabled user, `201` |
 | PATCH | `/admin/users/{id}` | Admin; `{role, enabled}` → updated user |
 
 Other than the explicit `201`/`204` cases, successful operations return `200`. Public browsing defaults to 12 rows; other lists default to 20. All pages accept size 1–100, use zero-based page numbers, and return `{content, page, totalPages, totalElements}`. Event browsing sorts by start then ID; management by start descending then ID; registration history by registration time descending then ID; users by email. Search accepts at most 200 characters, matches title/venue literally and case-insensitively, and escapes SQL wildcard characters.
@@ -59,6 +60,10 @@ Use future dates when executing the request. Title (160), description (10,000), 
 ## Users, registrations, attendance
 
 Users expose `{id, email, displayName, role, enabled}`. Roles are `ATTENDEE`, `ORGANIZER`, or `ADMIN`. Sign-up ignores extra fields and never grants organizer/admin access. Display names are required (100 characters); emails are validated (254 characters). Passwords require at least 12 characters and at most 72 UTF-8 bytes; passwords/hashes are never returned.
+
+Administrators can create users with any of the three roles through `POST /admin/users`. The role is required. New accounts are enabled; creating one does not sign in as that user or change the administrator's session. Duplicate emails return `409`, including differences in letter case. Use `PATCH /admin/users/{id}` to change role or enabled status; administrators cannot revoke their own access.
+
+Accounts are persisted in PostgreSQL's `app_user` table through Spring Data JPA. Each account has one role, stored as a string in its row; the allowed roles are defined in code and constrained by the database. Passwords are stored as BCrypt hashes with cost 12. Login loads the account from the database, and authenticated operations reload its role and enabled status so permission changes apply to existing sessions immediately. The admin list reads a paginated database query sorted by email.
 
 Registrations expose `{id, event, attendeeId, attendeeName, attendeeEmail, status, registeredAt, cancelledAt, cancellationReason}`. Status is `ACTIVE` or `CANCELLED`; reason is `ATTENDEE`, `EVENT_CANCELLED`, or null. A cancellation creates no new row. Re-registration creates a new row and retains prior history. Repeating registration after the event starts is `409`, even if an earlier active registration exists.
 

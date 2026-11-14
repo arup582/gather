@@ -1,10 +1,19 @@
 'use client';
+import {
+  GatherHeading,
+  GatherText,
+  GatherCard,
+  GatherButton,
+  GatherInput,
+  GatherLabel,
+  GatherForm,
+  GatherLink,
+  GatherError,
+} from '../components/ui';
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, post } from '../api';
 import { useAuth } from '../auth';
-import { ErrorBox } from '../ui';
 export function AuthPage({ signup = false }: { signup?: boolean }) {
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
@@ -34,38 +43,36 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
   }
   return (
     <div className="auth-layout">
-      <div className="auth-story">
-        <p className="eyebrow">A LITTLE CURIOSITY GOES A LONG WAY</p>
-        <h1>{signup ? 'Your people are out there.' : 'Welcome back to your community.'}</h1>
-        <p>
+      <div>
+        <GatherHeading level={1}>
+          {signup ? 'Your people are out there.' : 'Welcome back to your community.'}
+        </GatherHeading>
+        <GatherText>
           Make plans. Share experiences.
           <br />
           Create something worth showing up for.
-        </p>
-        <div className="auth-symbol" aria-hidden="true">
-          ✳
-        </div>
+        </GatherText>
       </div>
-      <section className="panel auth-panel">
-        <h2>{signup ? 'Create an account' : 'Sign in'}</h2>
-        <p className="muted">
+      <GatherCard as="section">
+        <GatherHeading level={2}>{signup ? 'Create an account' : 'Sign in'}</GatherHeading>
+        <GatherText className="muted">
           {signup ? 'Start with an attendee account. It’s free to join.' : 'Good to see you again.'}
-        </p>
-        <ErrorBox error={error} />
-        <form onSubmit={(e) => void submit(e)}>
+        </GatherText>
+        <GatherError error={error} />
+        <GatherForm onSubmit={(e) => void submit(e)}>
           {signup && (
-            <label>
+            <GatherLabel>
               Your name
-              <input name="displayName" autoComplete="name" required maxLength={100} />
-            </label>
+              <GatherInput name="displayName" autoComplete="name" required maxLength={100} />
+            </GatherLabel>
           )}
-          <label>
+          <GatherLabel>
             Email address
-            <input type="email" name="email" autoComplete="email" required maxLength={254} />
-          </label>
-          <label>
+            <GatherInput type="email" name="email" autoComplete="email" required maxLength={254} />
+          </GatherLabel>
+          <GatherLabel>
             Password
-            <input
+            <GatherInput
               type="password"
               name="password"
               autoComplete={signup ? 'new-password' : 'current-password'}
@@ -74,23 +81,23 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
               maxLength={72}
               aria-describedby={signup ? 'password-help' : undefined}
             />
-          </label>
+          </GatherLabel>
           {signup && (
-            <p id="password-help" className="small muted">
+            <GatherText id="password-help" className="small muted">
               At least 12 characters; no more than 72 UTF-8 bytes.
-            </p>
+            </GatherText>
           )}
-          <button className="full" disabled={busy}>
+          <GatherButton className="btn-block" disabled={busy}>
             {busy ? 'Please wait…' : signup ? 'Create account' : 'Sign in'}
-          </button>
-        </form>
-        <p className="small">
+          </GatherButton>
+        </GatherForm>
+        <GatherText className="small">
           {signup ? 'Already part of the community? ' : 'New to Gather? '}
-          <Link href={(signup ? '/signin' : '/signup') + '?next=' + encodeURIComponent(next)}>
+          <GatherLink href={(signup ? '/signin' : '/signup') + '?next=' + encodeURIComponent(next)}>
             {signup ? 'Sign in' : 'Create an account'}
-          </Link>
-        </p>
-      </section>
+          </GatherLink>
+        </GatherText>
+      </GatherCard>
     </div>
   );
 }

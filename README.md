@@ -8,21 +8,24 @@ Gather manages general-admission events, attendee registrations, and organizer c
 - Create an attendee account, sign in, register, and cancel a registration.
 - Create drafts, edit event details, publish events, and view attendee lists.
 - Check attendees in during an event; duplicate check-ins return the original record.
-- Manage users and roles as an administrator, with access to all events.
+- Create users and manage their roles and account status in a paginated administrator table.
+- Access all events as an administrator.
 
 Authorization and event ownership are enforced by the API. Sign-up creates attendee accounts only. Authentication uses hashed passwords and same-origin sessions with CSRF protection.
 
 ## Requirements
 
-| Component | Version |
-| --- | --- |
-| Java | 21 |
-| Spring Boot | 4.1.2 |
-| Node | 22.21.0, selected by `.nvmrc` |
-| PostgreSQL | 16 for the native scripts; 17 for Docker Compose |
-| Maven | Installed 3.8.x or 3.9.x for native scripts; wrapper included for Docker |
+| Component   | Version                                                                  |
+| ----------- | ------------------------------------------------------------------------ |
+| Java        | 21                                                                       |
+| Spring Boot | 4.1.2                                                                    |
+| Node        | 22.21.0, selected by `.nvmrc`                                            |
+| PostgreSQL  | 16 for the native scripts; 17 for Docker Compose                         |
+| Maven       | Installed 3.8.x or 3.9.x for native scripts; wrapper included for Docker |
 
 The frontend uses Next.js 16.4.3 App Router, React 19, and TypeScript 5. Exact dependency versions are recorded in `frontend/package-lock.json`.
+
+Shared Gather components use daisyUI for tables, pagination controls, dropdowns, forms, and account toggles, with one component per file. daisyUI is the only UI package beyond Next.js and React; controls use native browser interactions. The header’s palette icon opens appearance settings for themes, accent colors, fonts, text size, line height, density, corners, content width, and reduced motion. Preferences persist across reloads. See [frontend structure and theming](docs/frontend.md) for customization.
 
 Use installed tools for Hertz; Docker is an optional local alternative. The database volumes are separate; never open a PostgreSQL 17 data directory with PostgreSQL 16.
 
@@ -75,12 +78,12 @@ Use `docker compose restart backend` after backend edits. `docker compose down` 
 
 The `dev` profile seeds these accounts on the first startup of an empty database. They all use `DEV_SEED_PASSWORD` from your local `.env`.
 
-| Account | Role |
-| --- | --- |
-| `attendee@example.test` | Attendee |
-| `organizer@example.test` | Organizer |
+| Account                        | Role                             |
+| ------------------------------ | -------------------------------- |
+| `attendee@example.test`        | Attendee                         |
+| `organizer@example.test`       | Organizer                        |
 | `other-organizer@example.test` | Organizer with no initial events |
-| `admin@example.test` | Administrator |
+| `admin@example.test`           | Administrator                    |
 
 The seed creates sample events and one attendee registration. Restarting does not change account passwords or event dates. Changing `.env` after seeding does not reset existing passwords. Keep `.env`, `.local-runtime`, and database backups out of source control.
 

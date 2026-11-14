@@ -1,0 +1,255 @@
+/* Gather owns composition and sizing; daisyUI owns control appearance and states. */
+.input,
+.textarea,
+.select,
+.range {
+  width: 100%;
+}
+label:has(> :is(.input, .textarea, .select)) {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+.card {
+  background: var(--color-base-100);
+}
+.panel {
+  padding: var(--card-p, 1.5rem);
+}
+.banner {
+  margin-block: 1rem;
+  overflow-wrap: anywhere;
+}
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+.table {
+  min-width: 680px;
+}
+.table .select {
+  min-width: 10rem;
+}
+.cell-sub {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-top: 0.25rem;
+  opacity: 0.7;
+}
+.gather-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+.gather-pagination,
+.pagination-size,
+.pagination-navigation,
+.pagination-jump {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.gather-pagination {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 1.5rem;
+  font-size: 0.8125rem;
+}
+.pagination-count {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.pagination-size .select {
+  width: 5.5rem;
+}
+.pagination-jump .input {
+  width: 4rem;
+}
+.pagination-navigation > span {
+  white-space: nowrap;
+  padding-inline: 0.25rem;
+}
+.gather-drawer.modal-box {
+  width: min(100%, 28rem);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+.drawer-header,
+.drawer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.drawer-header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--color-base-300);
+}
+.drawer-header h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.375rem;
+}
+.drawer-header p {
+  margin: 0;
+  font-size: 0.8125rem;
+  opacity: 0.7;
+}
+.drawer-header .btn {
+  flex-shrink: 0;
+}
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.25rem;
+}
+.drawer-footer {
+  flex-wrap: wrap;
+  border-top: 1px solid var(--color-base-300);
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
+fieldset {
+  min-inline-size: 0;
+}
+.gather-choice-group,
+.gather-range {
+  margin-bottom: 1rem;
+}
+.choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 0.5rem;
+}
+.theme-choices .choice-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr));
+}
+.choice-options > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.choice-option {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+.choice-option:has(:focus-visible) {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.range-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+}
+.range-label output {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+.accent-swatches,
+.custom-color {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.accent-swatches {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.accent-swatch {
+  --btn-bg: var(--swatch, var(--color-base-200));
+  --btn-fg: #fff;
+}
+.accent-swatch[aria-pressed='true'] {
+  outline: 2px solid var(--color-base-content);
+  outline-offset: 2px;
+}
+.accent-swatch:not([aria-pressed='true']) svg {
+  visibility: hidden;
+}
+.swatch-default svg {
+  visibility: visible !important;
+  color: var(--color-base-content);
+}
+.swatch-jade {
+  --swatch: #168565;
+}
+.swatch-blue {
+  --swatch: #2563eb;
+}
+.swatch-violet {
+  --swatch: #7c3aed;
+}
+.swatch-terracotta {
+  --swatch: #c2410c;
+}
+.swatch-rose {
+  --swatch: #be185d;
+}
+.custom-color {
+  font-size: 0.75rem;
+}
+.custom-color label {
+  flex: 1;
+}
+.custom-color input[type='color'] {
+  width: 2.5rem;
+  padding: 0.25rem;
+}
+.custom-color .hex-input {
+  width: 7rem;
+}
+.field-error {
+  font-size: 0.75rem;
+  color: var(--color-error);
+}
+@media (max-width: 700px) {
+  .pagination-count {
+    flex-basis: 100%;
+  }
+  .pagination-navigation {
+    order: 3;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pagination-navigation > span {
+    flex-basis: 100%;
+    order: -1;
+    text-align: center;
+  }
+  .pagination-jump {
+    margin-left: auto;
+  }
+}
+
+.choice-option .radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+.drawer-footer > .btn:last-child {
+  margin-left: auto;
+}

@@ -1,10 +1,13 @@
 'use client';
+import { GatherText, GatherButton, GatherLink, GatherError } from './components/ui';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { GatherThemePicker } from './theme/GatherThemePicker';
+import { defaultAppearance, type Appearance } from './theme/config';
 import { useAuth } from './auth';
-import { ErrorBox } from './ui';
+import { GatherBrand } from './components/brand/GatherBrand';
+import { GatherTickets } from './components/brand/GatherTickets';
 function NavLink({
   href,
   children,
@@ -17,16 +20,24 @@ function NavLink({
   const path = usePathname();
   const active = end ? path === href : path === href || path.startsWith(href + '/');
   return (
-    <Link
-      href={href}
-      className={active ? 'active' : undefined}
-      aria-current={active ? 'page' : undefined}
-    >
-      {children}
-    </Link>
+    <li>
+      <GatherLink
+        href={href}
+        className={active ? 'menu-active' : undefined}
+        aria-current={active ? 'page' : undefined}
+      >
+        {children}
+      </GatherLink>
+    </li>
   );
 }
-export default function App({ children }: { children: ReactNode }) {
+export default function App({
+  children,
+  initialAppearance = defaultAppearance,
+}: {
+  children: ReactNode;
+  initialAppearance?: Appearance;
+}) {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -52,48 +63,50 @@ export default function App({ children }: { children: ReactNode }) {
       <a href="#main" className="skip">
         Skip to content
       </a>
-      <header className="site-header">
-        <Link href="/" className="brand" aria-label="Gather home">
-          <span aria-hidden="true">✳</span> gather<span className="brand-dot">.</span>
-        </Link>
+      <header className="navbar site-header">
+        <GatherBrand />
         <nav aria-label="Main navigation">
-          <NavLink href="/" end>
-            Discover
-          </NavLink>
-          {user && <NavLink href="/registrations">My registrations</NavLink>}
-          {user && user.role !== 'ATTENDEE' && <NavLink href="/manage">Manage events</NavLink>}
-          {user?.role === 'ADMIN' && <NavLink href="/admin">People</NavLink>}
+          <ul className="menu menu-horizontal">
+            <NavLink href="/" end>
+              Discover
+            </NavLink>
+            {user && <NavLink href="/registrations">My registrations</NavLink>}
+            {user && user.role !== 'ATTENDEE' && <NavLink href="/manage">Manage events</NavLink>}
+            {user?.role === 'ADMIN' && <NavLink href="/admin">People</NavLink>}
+          </ul>
         </nav>
         <div className="account">
+          <GatherThemePicker initialAppearance={initialAppearance} />
           {loading ? (
             <span role="status">Loading…</span>
           ) : user ? (
             <>
               <span className="account-name">{user.displayName}</span>
-              <button className="secondary" disabled={busy} onClick={() => void signOut()}>
+              <GatherButton variant="secondary" disabled={busy} onClick={() => void signOut()}>
                 {busy ? 'Signing out…' : 'Sign out'}
-              </button>
+              </GatherButton>
             </>
           ) : (
             <>
-              <Link href="/signin">Sign in</Link>
-              <Link className="button small-button" href="/signup">
+              <GatherLink href="/signin">Sign in</GatherLink>
+              <GatherLink variant="primary" className="btn-sm" href="/signup">
                 Join Gather ↗
-              </Link>
+              </GatherLink>
             </>
           )}
         </div>
       </header>
       <main id="main" className="container">
-        <ErrorBox error={error} />
+        <GatherError error={error} />
         {children}
       </main>
-      <footer>
-        <Link href="/" className="brand">
-          ✳ gather.
-        </Link>
-        <p>Small gatherings. Lasting connections.</p>
-        <span>Made for showing up.</span>
+      <footer className="footer site-footer">
+        <div>
+          <GatherBrand />
+          <GatherText>Small gatherings. Lasting connections.</GatherText>
+        </div>
+        <GatherTickets />
+        <GatherLink href="/#discover">Find your next experience ↗</GatherLink>
       </footer>
     </>
   );

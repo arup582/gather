@@ -27,6 +27,11 @@ public class IdentityService {
     return create(email, name, password, Role.ATTENDEE);
   }
 
+  public Actor createUser(Actor actor, String email, String name, String password, Role role) {
+    requireActiveAdministrator(actor);
+    return create(email, name, password, role);
+  }
+
   public Actor create(String email, String name, String password, Role role) {
     if (password.length() < 12
         || password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72)
@@ -73,17 +78,21 @@ public class IdentityService {
   }
 
   public Actor update(Actor actor, UUID id, Role role, boolean enabled) {
-    actor.requireAdmin();
-    // Serialize role changes so two administrators cannot revoke each other concurrently.
-    users.lockAdministrators();
-    var current = users.findById(actor.id()).orElseThrow(ApiException::forbidden);
-    if (!current.enabled || current.role != Role.ADMIN) throw ApiException.forbidden();
+    requireActiveAdministrator(actor);
     if (actor.id().equals(id) && (role != Role.ADMIN || !enabled))
       throw ApiException.conflict("You cannot remove your own administrator access");
     var u = users.findById(id).orElseThrow(ApiException::notFound);
     u.role = role;
     u.enabled = enabled;
     return u.view();
+  }
+
+  private void requireActiveAdministrator(Actor actor) {
+    actor.requireAdmin();
+    // Serialize admin writes and recheck access after any concurrent permission change.
+    users.lockAdministrators();
+    var current = users.findById(actor.id()).orElseThrow(ApiException::forbidden);
+    if (!current.enabled || current.role != Role.ADMIN) throw ApiException.forbidden();
   }
 
   public Optional<Actor> find(String email) {

@@ -167,6 +167,164 @@ class ApplicationIT {
   }
 
   @Test
+  void administratorCreatesDatabaseBackedAccountsForEveryRoleWithoutChangingSession()
+      throws Exception {
+    var session = login(admin.email());
+    for (var role : Role.values()) {
+      var email = "created-" + role.name().toLowerCase(Locale.ROOT) + "@example.test";
+      mvc.perform(
+              post("/api/admin/users")
+                  .session(session)
+                  .with(csrf())
+                  .contentType("application/json")
+                  .content(
+                      body(
+                          Map.of(
+                              "email",
+                              email.toUpperCase(Locale.ROOT),
+                              "displayName",
+                              " New user ",
+                              "password",
+                              password,
+                              "role",
+                              role))))
+          .andExpect(status().isCreated())
+          .andExpect(jsonPath("$.email").value(email))
+          .andExpect(jsonPath("$.displayName").value("New user"))
+          .andExpect(jsonPath("$.role").value(role.name()))
+          .andExpect(jsonPath("$.enabled").value(true))
+          .andExpect(jsonPath("$.password").doesNotExist())
+          .andExpect(jsonPath("$.passwordHash").doesNotExist());
+      var hash =
+          jdbc.queryForObject(
+              "select password_hash from app_user where email=?", String.class, email);
+      assertThat(new BCryptPasswordEncoder().matches(password, hash)).isTrue();
+      mvc.perform(get("/api/auth/me").session(login(email)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.role").value(role.name()));
+    }
+    mvc.perform(get("/api/auth/me").session(session))
+        .andExpect(jsonPath("$.id").value(admin.id().toString()));
+    mvc.perform(get("/api/admin/users").session(session))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.totalElements").value(7));
+  }
+
+  @Test
+  void creatingUsersRequiresCurrentAdministratorAccessAndCsrf() throws Exception {
+    var data =
+        body(
+            Map.of(
+                "email",
+                "new@example.test",
+                "displayName",
+                "New user",
+                "password",
+                password,
+                "role",
+                "ADMIN"));
+    mvc.perform(post("/api/admin/users").with(csrf()).contentType("application/json").content(data))
+        .andExpect(status().isUnauthorized());
+    for (var actor : List.of(host, attendee)) {
+      mvc.perform(
+              post("/api/admin/users")
+                  .session(login(actor.email()))
+                  .with(csrf())
+                  .contentType("application/json")
+                  .content(data))
+          .andExpect(status().isForbidden());
+    }
+    var session = login(admin.email());
+    mvc.perform(
+            post("/api/admin/users").session(session).contentType("application/json").content(data))
+        .andExpect(status().isForbidden());
+    identity.update(admin, host.id(), Role.ADMIN, true);
+    var formerAdmin = login(host.email());
+    identity.update(admin, host.id(), Role.ORGANIZER, true);
+    mvc.perform(
+            post("/api/admin/users")
+                .session(formerAdmin)
+                .with(csrf())
+                .contentType("application/json")
+                .content(data))
+        .andExpect(status().isForbidden());
+    identity.update(admin, host.id(), Role.ADMIN, true);
+    identity.update(admin, host.id(), Role.ADMIN, false);
+    mvc.perform(
+            post("/api/admin/users")
+                .session(formerAdmin)
+                .with(csrf())
+                .contentType("application/json")
+                .content(data))
+        .andExpect(status().isUnauthorized());
+    assertThat(identity.find("new@example.test")).isEmpty();
+  }
+
+  @Test
+  void adminCreationRejectsDuplicatesInvalidFieldsAndOversizedUtf8Passwords() throws Exception {
+    var data =
+        new HashMap<String, Object>(
+            Map.of(
+                "email",
+                attendee.email().toUpperCase(Locale.ROOT),
+                "displayName",
+                "New user",
+                "password",
+                password,
+                "role",
+                "ORGANIZER"));
+    mvc.perform(
+            post("/api/admin/users")
+                .with(user(admin.email()))
+                .with(csrf())
+                .contentType("application/json")
+                .content(body(data)))
+        .andExpect(status().isConflict());
+    data.put("email", "invalid");
+    data.put("displayName", " ");
+    data.put("password", "short");
+    data.remove("role");
+    mvc.perform(
+            post("/api/admin/users")
+                .with(user(admin.email()))
+                .with(csrf())
+                .contentType("application/json")
+                .content(body(data)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.fields.email").exists())
+        .andExpect(jsonPath("$.fields.displayName").exists())
+        .andExpect(jsonPath("$.fields.password").exists())
+        .andExpect(jsonPath("$.fields.role").exists());
+    data.putAll(
+        Map.of(
+            "email",
+            "new@example.test",
+            "displayName",
+            "New user",
+            "password",
+            "🙂".repeat(20),
+            "role",
+            "ATTENDEE"));
+    mvc.perform(
+            post("/api/admin/users")
+                .with(user(admin.email()))
+                .with(csrf())
+                .contentType("application/json")
+                .content(body(data)))
+        .andExpect(status().isBadRequest());
+    data.put("password", password);
+    data.put("role", "SUPERUSER");
+    mvc.perform(
+            post("/api/admin/users")
+                .with(user(admin.email()))
+                .with(csrf())
+                .contentType("application/json")
+                .content(body(data)))
+        .andExpect(status().isBadRequest());
+    assertThat(identity.find("new@example.test")).isEmpty();
+  }
+
+  @Test
   void loginRejectsBadCredentialsAndDisabledAccounts() throws Exception {
     mvc.perform(
             post("/api/auth/login")

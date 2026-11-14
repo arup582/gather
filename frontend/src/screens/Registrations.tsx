@@ -1,18 +1,30 @@
 'use client';
+import {
+  GatherHeading,
+  GatherText,
+  GatherAlert,
+  GatherButton,
+  GatherLink,
+  GatherBadge,
+  GatherError,
+  GatherLoading,
+  GatherPagination,
+} from '../components/ui';
+import { usePagination } from '../hooks/usePagination';
 import { useState } from 'react';
-import Link from 'next/link';
 
 import { api, post } from '../api';
-import { Badge, dateTime, ErrorBox, Loading, Pager, useTimezone, useResource } from '../ui';
+import { useResource } from '../hooks/useResource';
+import { dateTime, useTimezone } from '../lib/dates';
 import type { Page, Registration } from '../types';
 export function MyRegistrations() {
   const timezone = useTimezone();
-  const [page, setPage] = useState(0);
+  const { page, setPage, pageSize, changePageSize } = usePagination();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState<unknown>();
   const [notice, setNotice] = useState('');
-  const resource = useResource(`mine:${page}`, () =>
-    api<Page<Registration>>('/registrations?page=' + page),
+  const resource = useResource(`mine:${page}:${pageSize}`, () =>
+    api<Page<Registration>>(`/registrations?page=${page}&size=${pageSize}`),
   );
   async function cancel(id: string) {
     if (
@@ -34,33 +46,32 @@ export function MyRegistrations() {
   return (
     <>
       <div className="page-heading">
-        <p className="eyebrow">YOUR NEXT CHAPTER</p>
-        <h1>My registrations</h1>
-        <p>Upcoming plans and a record of your past registrations.</p>
+        <GatherHeading level={1}>My registrations</GatherHeading>
+        <GatherText>Upcoming plans and a record of your past registrations.</GatherText>
       </div>
-      <p className="timezone">All times shown in {timezone}.</p>
-      <ErrorBox error={error || resource.error} />
+      <GatherText className="small muted">All times shown in {timezone}.</GatherText>
+      <GatherError error={error || resource.error} />
       {notice && (
-        <p role="status" className="banner success">
+        <GatherAlert role="status" tone="success">
           {notice}
-        </p>
+        </GatherAlert>
       )}
-      {resource.loading && <Loading />}
+      {resource.loading && <GatherLoading />}
       {resource.data && (
         <>
           {resource.data.content.length ? (
             <div className="stack">
               {resource.data.content.map((r) => (
-                <article className="registration-card" key={r.id}>
+                <article className="card card-border panel registration-card" key={r.id}>
                   <div>
-                    <Badge status={r.status} />
-                    <h2>
-                      <Link href={'/events/' + r.event.id}>{r.event.title}</Link>
-                    </h2>
-                    <p>
+                    <GatherBadge status={r.status} />
+                    <GatherHeading level={2}>
+                      <GatherLink href={'/events/' + r.event.id}>{r.event.title}</GatherLink>
+                    </GatherHeading>
+                    <GatherText>
                       {dateTime(r.event.startsAt)} · {r.event.venue}
-                    </p>
-                    <p className="small muted">
+                    </GatherText>
+                    <GatherText className="small muted">
                       Registered {dateTime(r.registeredAt)}
                       {r.cancelledAt && (
                         <>
@@ -69,33 +80,38 @@ export function MyRegistrations() {
                           {r.cancellationReason === 'EVENT_CANCELLED' && ' by the event organizer'}
                         </>
                       )}
-                    </p>
+                    </GatherText>
                     {r.event.status === 'CANCELLED' && (
-                      <p className="small">This event was cancelled.</p>
+                      <GatherText className="small">This event was cancelled.</GatherText>
                     )}
                   </div>
                   {r.status === 'ACTIVE' && new Date(r.event.startsAt).getTime() > Date.now() && (
-                    <button
-                      className="secondary"
+                    <GatherButton
+                      variant="secondary"
                       disabled={!!busy}
                       onClick={() => void cancel(r.id)}
                     >
                       {busy === r.id ? 'Cancelling…' : 'Cancel registration'}
-                    </button>
+                    </GatherButton>
                   )}
                 </article>
               ))}
             </div>
           ) : (
-            <div className="empty">
-              <h2>Your next experience is waiting</h2>
-              <p>You haven’t registered for an event yet.</p>
-              <Link className="button" href="/">
+            <div className="card card-border panel empty">
+              <GatherHeading level={2}>Your next experience is waiting</GatherHeading>
+              <GatherText>You haven’t registered for an event yet.</GatherText>
+              <GatherLink variant="primary" href="/">
                 Explore events
-              </Link>
+              </GatherLink>
             </div>
           )}
-          <Pager data={resource.data} onPage={setPage} />
+          <GatherPagination
+            data={resource.data}
+            pageSize={pageSize}
+            onPage={setPage}
+            onPageSize={changePageSize}
+          />
         </>
       )}
     </>

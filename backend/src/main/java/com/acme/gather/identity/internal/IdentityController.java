@@ -24,6 +24,12 @@ public class IdentityController {
 
   record Update(@NotNull Role role, @NotNull Boolean enabled) {}
 
+  record CreateUser(
+      @NotBlank @Email @Size(max = 254) String email,
+      @NotBlank @Size(max = 100) String displayName,
+      @NotNull @Size(min = 12, max = 72) String password,
+      @NotNull Role role) {}
+
   @GetMapping("/api/auth/csrf")
   Map<String, String> csrf(CsrfToken token) {
     return Map.of("token", token.getToken(), "headerName", token.getHeaderName());
@@ -51,5 +57,12 @@ public class IdentityController {
   @PatchMapping("/api/admin/users/{id}")
   Actor update(Authentication auth, @PathVariable UUID id, @Valid @RequestBody Update r) {
     return identity.update(identity.current(auth), id, r.role(), r.enabled());
+  }
+
+  @PostMapping("/api/admin/users")
+  @ResponseStatus(org.springframework.http.HttpStatus.CREATED)
+  Actor createUser(Authentication auth, @Valid @RequestBody CreateUser r) {
+    return identity.createUser(
+        identity.current(auth), r.email(), r.displayName(), r.password(), r.role());
   }
 }

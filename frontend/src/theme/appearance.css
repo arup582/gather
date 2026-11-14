@@ -1,0 +1,73 @@
+/* Settings-panel composition. Preview colors come from the actual selected daisyUI palettes. */
+.appearance-section {
+  padding-block: 1.25rem;
+  border-bottom: 1px solid var(--color-base-300);
+}
+.appearance-section:first-child {
+  padding-top: 0;
+}
+.appearance-section:last-child {
+  border: 0;
+  padding-bottom: 0;
+}
+.appearance-section h3 {
+  font-size: 0.875rem;
+  margin: 0 0 1rem;
+  letter-spacing: normal;
+}
+.appearance-section .setting-hint {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-block: 0.75rem 1.25rem;
+}
+.appearance-fonts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.theme-preview {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-field);
+  background: var(--color-base-200);
+}
+.theme-preview span {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+.theme-preview span:nth-child(2) {
+  background: var(--color-secondary);
+}
+.theme-preview span:nth-child(3) {
+  background: var(--color-accent);
+}
+.type-preview h3 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  margin-block: 0.75rem;
+}
+.type-preview p {
+  font-size: 0.875rem;
+}
+.preview-eyebrow {
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+.motion-setting {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.motion-setting .gather-toggle > span {
+  display: none;
+}
+@media (max-width: 380px) {
+  .appearance-fonts {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

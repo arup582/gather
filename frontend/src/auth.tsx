@@ -1,4 +1,5 @@
 'use client';
+import { GatherHeading, GatherText, GatherAlert, GatherButton } from './components/ui';
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -37,12 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider value={{ user, loading, refresh, logout }}>
       {error && (
-        <div role="alert" className="banner error">
+        <GatherAlert role="alert" tone="error">
           {error}{' '}
-          <button onClick={() => void refresh().catch((e) => setError(message(e)))}>
+          <GatherButton onClick={() => void refresh().catch((e) => setError(message(e)))}>
             Retry connection
-          </button>
-        </div>
+          </GatherButton>
+        </GatherAlert>
       )}
       {children}
     </Context.Provider>
@@ -68,13 +69,13 @@ export function Protected({
   useEffect(() => {
     if (!loading && !user) router.replace('/signin?next=' + encodeURIComponent(pathname));
   }, [loading, user, pathname, router]);
-  if (loading) return <p role="status">Loading your account…</p>;
-  if (!user) return <p role="status">Redirecting to sign in…</p>;
+  if (loading) return <GatherText role="status">Loading your account…</GatherText>;
+  if (!user) return <GatherText role="status">Redirecting to sign in…</GatherText>;
   if ((manager && user.role === 'ATTENDEE') || (admin && user.role !== 'ADMIN'))
     return (
       <section className="empty">
-        <h1>Access restricted</h1>
-        <p>Your account does not have access to this page.</p>
+        <GatherHeading level={1}>Access restricted</GatherHeading>
+        <GatherText>Your account does not have access to this page.</GatherText>
         <a href="/">Browse events</a>
       </section>
     );

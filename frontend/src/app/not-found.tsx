@@ -1,9 +1,9 @@
-import Link from 'next/link';
+import { GatherHeading, GatherLink } from '../components/ui';
 export default function NotFound() {
   return (
     <div className="empty">
-      <h1>Page not found</h1>
-      <Link href="/">Back to Gather</Link>
+      <GatherHeading level={1}>Page not found</GatherHeading>
+      <GatherLink href="/">Back to Gather</GatherLink>
     </div>
   );
 }

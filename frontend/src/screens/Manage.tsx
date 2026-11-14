@@ -1,85 +1,102 @@
 'use client';
+import {
+  GatherHeading,
+  GatherText,
+  GatherAlert,
+  GatherTableHead,
+  GatherTableBody,
+  GatherTableRow,
+  GatherTableHeader,
+  GatherTableCell,
+  GatherTable,
+  GatherButton,
+  GatherInput,
+  GatherTextarea,
+  GatherLabel,
+  GatherForm,
+  GatherFieldset,
+  GatherLink,
+  GatherBadge,
+  GatherError,
+  GatherLoading,
+  GatherPagination,
+} from '../components/ui';
+import { usePagination } from '../hooks/usePagination';
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { api, post } from '../api';
 import { useAuth } from '../auth';
-import {
-  Badge,
-  dateTime,
-  ErrorBox,
-  Loading,
-  localInput,
-  Pager,
-  useTimezone,
-  useResource,
-} from '../ui';
+import { useResource } from '../hooks/useResource';
+import { dateTime, localInput, useTimezone } from '../lib/dates';
 import type { Attendance, Event, EventInput, Page, Registration } from '../types';
 export function ManageEvents() {
   const timezone = useTimezone();
-  const [page, setPage] = useState(0);
+  const { page, setPage, pageSize, changePageSize } = usePagination();
   const { user } = useAuth();
-  const resource = useResource(`manage:${page}`, () =>
-    api<Page<Event>>('/manage/events?page=' + page),
+  const resource = useResource(`manage:${page}:${pageSize}`, () =>
+    api<Page<Event>>(`/manage/events?page=${page}&size=${pageSize}`),
   );
   return (
     <>
       <div className="section-heading page-heading">
         <div>
-          <p className="eyebrow">BRING PEOPLE TOGETHER</p>
-          <h1>{user?.role === 'ADMIN' ? 'All events' : 'Your events'}</h1>
-          <p>Create a gathering, welcome your attendees, and make it happen.</p>
+          <GatherHeading level={1}>
+            {user?.role === 'ADMIN' ? 'All events' : 'Your events'}
+          </GatherHeading>
+          <GatherText>Create a gathering, welcome your attendees, and make it happen.</GatherText>
         </div>
-        <Link className="button" href="/manage/events/new">
+        <GatherLink variant="primary" href="/manage/events/new">
           + Create event
-        </Link>
+        </GatherLink>
       </div>
-      <ErrorBox error={resource.error} />
-      {resource.loading && <Loading />}
+      <GatherError error={resource.error} />
+      {resource.loading && <GatherLoading />}
       {resource.data && (
         <>
           {resource.data.content.length ? (
-            <div className="table-wrap">
-              <table>
-                <caption className="sr-only">Managed events</caption>
-                <thead>
-                  <tr>
-                    <th>Event</th>
-                    <th>When · {timezone}</th>
-                    <th>Status</th>
-                    <th>
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resource.data.content.map((e) => (
-                    <tr key={e.id}>
-                      <td>
-                        <strong>{e.title}</strong>
-                        <span className="cell-sub">
-                          {e.venue} · {e.organizerName}
-                        </span>
-                      </td>
-                      <td>{dateTime(e.startsAt)}</td>
-                      <td>
-                        <Badge status={e.status} />
-                      </td>
-                      <td>
-                        <Link href={'/manage/events/' + e.id}>Manage →</Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <GatherTable caption="Managed events">
+              <GatherTableHead>
+                <GatherTableRow>
+                  <GatherTableHeader>Event</GatherTableHeader>
+                  <GatherTableHeader>When · {timezone}</GatherTableHeader>
+                  <GatherTableHeader>Status</GatherTableHeader>
+                  <GatherTableHeader>
+                    <span className="sr-only">Actions</span>
+                  </GatherTableHeader>
+                </GatherTableRow>
+              </GatherTableHead>
+              <GatherTableBody>
+                {resource.data.content.map((e) => (
+                  <GatherTableRow key={e.id}>
+                    <GatherTableCell>
+                      <strong>{e.title}</strong>
+                      <span className="cell-sub">
+                        {e.venue} · {e.organizerName}
+                      </span>
+                    </GatherTableCell>
+                    <GatherTableCell>{dateTime(e.startsAt)}</GatherTableCell>
+                    <GatherTableCell>
+                      <GatherBadge status={e.status} />
+                    </GatherTableCell>
+                    <GatherTableCell>
+                      <GatherLink href={'/manage/events/' + e.id}>Manage →</GatherLink>
+                    </GatherTableCell>
+                  </GatherTableRow>
+                ))}
+              </GatherTableBody>
+            </GatherTable>
           ) : (
-            <div className="empty">
-              <h2>Start with an idea</h2>
-              <p>Create your first draft, then publish when you’re ready.</p>
+            <div className="card card-border panel empty">
+              <GatherHeading level={2}>Start with an idea</GatherHeading>
+              <GatherText>Create your first draft, then publish when you’re ready.</GatherText>
             </div>
           )}
-          <Pager data={resource.data} onPage={setPage} />
+          <GatherPagination
+            data={resource.data}
+            pageSize={pageSize}
+            onPage={setPage}
+            onPageSize={changePageSize}
+          />
         </>
       )}
     </>
@@ -136,77 +153,79 @@ export function EventForm({ event, onSaved }: { event?: Event; onSaved: (event: 
     }
   }
   return (
-    <form className="panel event-form" onSubmit={(e) => void submit(e)}>
-      <h2>{event ? 'Event details' : 'Make it a gathering'}</h2>
-      <ErrorBox error={error} />
+    <GatherForm panel className="event-form" onSubmit={(e) => void submit(e)}>
+      <GatherHeading level={2}>{event ? 'Event details' : 'Make it a gathering'}</GatherHeading>
+      <GatherError error={error} />
       {validation && (
-        <p className="banner error" role="alert">
+        <GatherAlert tone="error" role="alert">
           {validation}
-        </p>
+        </GatherAlert>
       )}
-      {locked && <p className="banner">Cancelled or started events cannot be edited.</p>}
-      <fieldset disabled={locked || busy}>
-        <label>
+      {locked && <GatherAlert>Cancelled or started events cannot be edited.</GatherAlert>}
+      <GatherFieldset disabled={locked || busy}>
+        <GatherLabel>
           Title
-          <input name="title" required maxLength={160} defaultValue={event?.title} />
-        </label>
-        <label>
+          <GatherInput name="title" required maxLength={160} defaultValue={event?.title} />
+        </GatherLabel>
+        <GatherLabel>
           Description
-          <textarea
+          <GatherTextarea
             name="description"
             required
             maxLength={10000}
             rows={6}
             defaultValue={event?.description}
           />
-        </label>
-        <label>
+        </GatherLabel>
+        <GatherLabel>
           Venue
-          <input name="venue" required maxLength={240} defaultValue={event?.venue} />
-        </label>
+          <GatherInput name="venue" required maxLength={240} defaultValue={event?.venue} />
+        </GatherLabel>
         <div className="form-row">
-          <label>
+          <GatherLabel>
             Starts at
-            <input
+            <GatherInput
               type="datetime-local"
               name="startsAt"
               required
               defaultValue={event && localInput(event.startsAt)}
               readOnly={event?.status === 'PUBLISHED'}
             />
-          </label>
-          <label>
+          </GatherLabel>
+          <GatherLabel>
             Ends at
-            <input
+            <GatherInput
               type="datetime-local"
               name="endsAt"
               required
               defaultValue={event && localInput(event.endsAt)}
               readOnly={event?.status === 'PUBLISHED'}
             />
-          </label>
+          </GatherLabel>
         </div>
-        <p className="small muted">
+        <GatherText className="small muted">
           Enter dates in {timezone}.{' '}
           {event?.status === 'PUBLISHED' &&
             'Published dates are fixed. Cancel and create a new event to reschedule.'}
-        </p>
-        <button disabled={busy}>
+        </GatherText>
+        <GatherButton disabled={busy}>
           {busy ? 'Saving…' : event ? 'Save changes' : 'Create draft'}
-        </button>
-      </fieldset>
-    </form>
+        </GatherButton>
+      </GatherFieldset>
+    </GatherForm>
   );
 }
 export function NewEvent() {
   const router = useRouter();
   return (
     <>
-      <Link className="back" href="/manage">
+      <GatherLink variant="ghost" className="btn-sm" href="/manage">
         ← Your events
-      </Link>
-      <h1>Create an event</h1>
-      <p className="lead">Start with a draft. Only published events appear publicly.</p>
+      </GatherLink>
+      <GatherHeading level={1}>Create an event</GatherHeading>
+      <GatherText className="muted">
+        Start with a draft. Only published events appear publicly.
+      </GatherText>
       <EventForm onSaved={(e) => router.push('/manage/events/' + e.id)} />
     </>
   );
@@ -243,46 +262,46 @@ export function ManageEvent() {
   const event = resource.data;
   if (event && user?.role !== 'ADMIN' && event.organizerId !== user?.id)
     return (
-      <div className="empty">
-        <h1>Access restricted</h1>
-        <p>You can manage only your own events.</p>
+      <div className="card card-border panel empty">
+        <GatherHeading level={1}>Access restricted</GatherHeading>
+        <GatherText>You can manage only your own events.</GatherText>
       </div>
     );
   return (
     <>
-      <Link className="back" href="/manage">
+      <GatherLink variant="ghost" className="btn-sm" href="/manage">
         ← Your events
-      </Link>
-      <ErrorBox error={error || resource.error} />
+      </GatherLink>
+      <GatherError error={error || resource.error} />
       {notice && (
-        <p className="banner success" role="status">
+        <GatherAlert tone="success" role="status">
           {notice}
-        </p>
+        </GatherAlert>
       )}
-      {resource.loading && <Loading />}
+      {resource.loading && <GatherLoading />}
       {event && (
         <>
           <div className="section-heading">
             <div>
-              <Badge status={event.status} />
-              <h1>{event.title}</h1>
+              <GatherBadge status={event.status} />
+              <GatherHeading level={1}>{event.title}</GatherHeading>
             </div>
-            <div className="actions">
+            <div className="card-actions">
               {event.status === 'DRAFT' && (
-                <button disabled={busy} onClick={() => void transition('publish')}>
+                <GatherButton disabled={busy} onClick={() => void transition('publish')}>
                   Publish event
-                </button>
+                </GatherButton>
               )}
               {event.status !== 'CANCELLED' && (
-                <button
-                  className="danger"
+                <GatherButton
+                  variant="danger"
                   disabled={busy}
                   onClick={() => void transition('cancel')}
                 >
                   Cancel event
-                </button>
+                </GatherButton>
               )}
-              <Link href={'/events/' + id}>View event ↗</Link>
+              <GatherLink href={'/events/' + id}>View event ↗</GatherLink>
             </div>
           </div>
           <EventForm
@@ -301,17 +320,22 @@ export function ManageEvent() {
 }
 function Attendees({ event }: { event: Event }) {
   const timezone = useTimezone();
-  const [page, setPage] = useState(0);
+  const { page, setPage, pageSize, changePageSize } = usePagination();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState<unknown>();
   const [notice, setNotice] = useState('');
-  const resource = useResource(`attendees:${event.id}:${page}:${event.status}`, async () => {
-    const [registrations, attendance] = await Promise.all([
-      api<Page<Registration>>(`/manage/events/${event.id}/registrations?page=${page}`),
-      api<Attendance[]>(`/manage/events/${event.id}/attendance`),
-    ]);
-    return { registrations, attendance };
-  });
+  const resource = useResource(
+    `attendees:${event.id}:${page}:${pageSize}:${event.status}`,
+    async () => {
+      const [registrations, attendance] = await Promise.all([
+        api<Page<Registration>>(
+          `/manage/events/${event.id}/registrations?page=${page}&size=${pageSize}`,
+        ),
+        api<Attendance[]>(`/manage/events/${event.id}/attendance`),
+      ]);
+      return { registrations, attendance };
+    },
+  );
   async function checkIn(id: string) {
     setBusy(id);
     setError(undefined);
@@ -333,80 +357,81 @@ function Attendees({ event }: { event: Event }) {
     <section className="attendees">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">THE PEOPLE MAKE IT</p>
-          <h2>Registrations & check-in</h2>
+          <GatherHeading level={2}>Registrations & check-in</GatherHeading>
         </div>
-        <button className="secondary" onClick={resource.reload}>
+        <GatherButton variant="secondary" onClick={resource.reload}>
           Refresh attendees
-        </button>
+        </GatherButton>
       </div>
-      <p className="muted">
+      <GatherText className="muted">
         Check-in opens at the event start and closes at the end. Refresh to update availability.
-      </p>
-      <ErrorBox error={error || resource.error} />
+      </GatherText>
+      <GatherError error={error || resource.error} />
       {notice && (
-        <p role="status" className="banner success">
+        <GatherAlert role="status" tone="success">
           {notice}
-        </p>
+        </GatherAlert>
       )}
-      {resource.loading && <Loading />}
+      {resource.loading && <GatherLoading />}
       {resource.data && (
         <>
           {resource.data.registrations.content.length ? (
-            <div className="table-wrap">
-              <table>
-                <caption className="sr-only">Event registrations</caption>
-                <thead>
-                  <tr>
-                    <th>Attendee</th>
-                    <th>Registered · {timezone}</th>
-                    <th>Status</th>
-                    <th>Attendance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resource.data.registrations.content.map((r) => {
-                    const check = resource.data?.attendance.find((a) => a.registrationId === r.id);
-                    return (
-                      <tr key={r.id}>
-                        <td>
-                          <strong>{r.attendeeName}</strong>
-                          <span className="cell-sub">{r.attendeeEmail}</span>
-                        </td>
-                        <td>{dateTime(r.registeredAt)}</td>
-                        <td>
-                          <Badge status={r.status} />
-                        </td>
-                        <td>
-                          {check ? (
-                            <span className="checked">
-                              ✓ Checked in
-                              <span className="cell-sub">{dateTime(check.checkedInAt)}</span>
-                            </span>
-                          ) : r.status === 'ACTIVE' ? (
-                            <button
-                              disabled={!canCheckIn || !!busy}
-                              onClick={() => void checkIn(r.id)}
-                            >
-                              {busy === r.id ? 'Checking in…' : 'Check in'}
-                            </button>
-                          ) : (
-                            'Not eligible'
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <GatherTable caption="Event registrations">
+              <GatherTableHead>
+                <GatherTableRow>
+                  <GatherTableHeader>Attendee</GatherTableHeader>
+                  <GatherTableHeader>Registered · {timezone}</GatherTableHeader>
+                  <GatherTableHeader>Status</GatherTableHeader>
+                  <GatherTableHeader>Attendance</GatherTableHeader>
+                </GatherTableRow>
+              </GatherTableHead>
+              <GatherTableBody>
+                {resource.data.registrations.content.map((r) => {
+                  const check = resource.data?.attendance.find((a) => a.registrationId === r.id);
+                  return (
+                    <GatherTableRow key={r.id}>
+                      <GatherTableCell>
+                        <strong>{r.attendeeName}</strong>
+                        <span className="cell-sub">{r.attendeeEmail}</span>
+                      </GatherTableCell>
+                      <GatherTableCell>{dateTime(r.registeredAt)}</GatherTableCell>
+                      <GatherTableCell>
+                        <GatherBadge status={r.status} />
+                      </GatherTableCell>
+                      <GatherTableCell>
+                        {check ? (
+                          <span>
+                            ✓ Checked in
+                            <span className="cell-sub">{dateTime(check.checkedInAt)}</span>
+                          </span>
+                        ) : r.status === 'ACTIVE' ? (
+                          <GatherButton
+                            disabled={!canCheckIn || !!busy}
+                            onClick={() => void checkIn(r.id)}
+                          >
+                            {busy === r.id ? 'Checking in…' : 'Check in'}
+                          </GatherButton>
+                        ) : (
+                          'Not eligible'
+                        )}
+                      </GatherTableCell>
+                    </GatherTableRow>
+                  );
+                })}
+              </GatherTableBody>
+            </GatherTable>
           ) : (
-            <div className="empty">
-              <h3>No registrations yet</h3>
-              <p>Share your published event to start bringing people together.</p>
+            <div className="card card-border panel empty">
+              <GatherHeading level={3}>No registrations yet</GatherHeading>
+              <GatherText>Share your published event to start bringing people together.</GatherText>
             </div>
           )}
-          <Pager data={resource.data.registrations} onPage={setPage} />
+          <GatherPagination
+            data={resource.data.registrations}
+            pageSize={pageSize}
+            onPage={setPage}
+            onPageSize={changePageSize}
+          />
         </>
       )}
     </section>

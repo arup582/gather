@@ -1,8 +1,11 @@
 import { test, expect, request } from '@playwright/test';
-import type { Page, APIRequestContext } from '@playwright/test';
+import type { Page, Locator, APIRequestContext } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 const seedPassword = process.env.DEV_SEED_PASSWORD;
 const webURL = 'http://127.0.0.1:3000';
+async function selectOption(_page: Page, control: Locator, name: string) {
+  await control.selectOption({ label: name });
+}
 async function signIn(page: Page, email: string) {
   if (!seedPassword)
     throw new Error('Set DEV_SEED_PASSWORD for the explicit development seed accounts');
@@ -108,14 +111,35 @@ test('organizer checks in an attendee through the live UI', async ({ page }) => 
 test('administrator grants and revokes organizer access', async ({ page }) => {
   await signIn(page, 'admin@example.test');
   await page.getByRole('link', { name: 'People', exact: true }).click();
-  const card = page.locator('.user-card').filter({ hasText: 'Taylor Attendee' });
-  await card.getByRole('combobox').selectOption('ORGANIZER');
+  await selectOption(page, page.getByLabel('Rows per page'), '100');
+  const card = page.getByRole('row').filter({ hasText: 'Taylor Attendee' });
+  await selectOption(
+    page,
+    card.getByRole('combobox', { name: 'Role for Taylor Attendee' }),
+    'Organizer',
+  );
   await card.getByRole('button', { name: 'Save user' }).click();
   await expect(page.locator('.banner[role="status"]')).toContainText('updated');
-  await expect(card.getByRole('combobox')).toHaveValue('ORGANIZER');
-  await card.getByRole('combobox').selectOption('ATTENDEE');
-  await card.getByRole('button', { name: 'Save user' }).click();
-  await expect(card.getByRole('combobox')).toHaveValue('ATTENDEE');
+  await expect(card.getByRole('combobox', { name: 'Role for Taylor Attendee' })).toHaveValue(
+    'ORGANIZER',
+  );
+  await selectOption(
+    page,
+    card.getByRole('combobox', { name: 'Role for Taylor Attendee' }),
+    'Attendee',
+  );
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/admin/users/') &&
+        response.request().method() === 'PATCH' &&
+        response.status() === 200,
+    ),
+    card.getByRole('button', { name: 'Save user' }).click(),
+  ]);
+  await expect(card.getByRole('combobox', { name: 'Role for Taylor Attendee' })).toHaveValue(
+    'ATTENDEE',
+  );
   await expect(card.getByRole('button', { name: 'Save user' })).toBeDisabled();
 });
 test('public layout remains usable at a mobile viewport', async ({ page }) => {
@@ -153,4 +177,255 @@ test.describe('Next routing', () => {
     await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
     expect(errors).toEqual([]);
   });
+});
+
+test('administrator creates an account, manages it in the table, and the new user can sign in', async ({
+  page,
+}) => {
+  const suffix = randomUUID().slice(0, 8);
+  const name = 'Managed organizer ' + suffix;
+  const email = '000-managed-' + suffix + '@example.test';
+  const password = randomUUID();
+  await signIn(page, 'admin@example.test');
+  await page.getByRole('link', { name: 'People', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'User management' })).toBeVisible();
+  await page.getByRole('button', { name: '+ Create user' }).click();
+  const form = page.getByRole('region', { name: 'Create user' });
+  await form.getByLabel('Full name').fill(name);
+  await form.getByLabel('Email address').fill(email);
+  await form.getByLabel('Password', { exact: true }).fill(password);
+  await selectOption(page, form.getByRole('combobox', { name: 'Role', exact: true }), 'Organizer');
+  await form.getByRole('button', { name: 'Create user', exact: true }).click();
+  await expect(page.locator('.banner[role="status"]')).toContainText('created successfully');
+  const row = page.getByRole('row').filter({ hasText: email });
+  await expect(row.getByLabel('Role for ' + name)).toHaveValue('ORGANIZER');
+  await page.reload();
+  await expect(row).toBeVisible();
+  await row.getByRole('switch', { name: 'Account enabled for ' + name }).click();
+  await row.getByRole('button', { name: 'Save user' }).click();
+  await expect(page.locator('.banner[role="status"]')).toContainText('Permissions updated');
+  await expect(row.getByRole('button', { name: 'Save user' })).toBeDisabled();
+  await page.reload();
+  await expect(row.getByRole('switch', { name: 'Account enabled for ' + name })).not.toBeChecked();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  const scroller = page.getByRole('region', { name: 'Users table' });
+  expect(await scroller.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(
+    true,
+  );
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.goto('/signin');
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.locator('.banner[role="alert"]')).toContainText(
+    'Email or password is incorrect',
+  );
+  await signIn(page, 'admin@example.test');
+  await page.goto('/admin');
+  await row.getByRole('switch', { name: 'Account enabled for ' + name }).click();
+  await row.getByRole('button', { name: 'Save user' }).click();
+  await expect(page.locator('.banner[role="status"]')).toContainText('Permissions updated');
+  await expect(row.getByRole('button', { name: 'Save user' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.goto('/signin');
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Manage events', exact: true })).toBeVisible();
+});
+
+test('tables paginate on the server and retain controls for a single page', async ({ page }) => {
+  await signIn(page, 'admin@example.test');
+  await page.goto('/admin');
+  const users = await (await page.request.get('/api/admin/users?size=100')).json();
+  for (let index = users.totalElements; index < 12; index++) {
+    const created = await mutation(page.request, '/admin/users', {
+      displayName: `Pagination user ${index}`,
+      email: `pagination-${randomUUID()}@example.test`,
+      password: randomUUID(),
+      role: 'ATTENDEE',
+    });
+    expect(created.status()).toBe(201);
+  }
+  await page.reload();
+  await expect(page.getByRole('table').getByRole('row')).toHaveCount(11);
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().includes('/api/admin/users?page=1&size=10') && response.ok(),
+    ),
+    page.getByRole('button', { name: 'Next page', exact: true }).click(),
+  ]);
+  await expect(page.getByRole('navigation', { name: 'Pagination' })).toContainText('Page 2 of');
+  await page.getByRole('button', { name: 'Last page' }).click();
+  await expect(page.getByRole('button', { name: 'Next page', exact: true })).toBeDisabled();
+  await page.getByLabel('Go to page').fill('1');
+  await page.getByRole('button', { name: 'Go', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'First page' })).toBeDisabled();
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().includes('/api/admin/users?page=0&size=100') && response.ok(),
+    ),
+    selectOption(page, page.getByLabel('Rows per page'), '100'),
+  ]);
+  await expect(page.getByRole('navigation', { name: 'Pagination' })).toBeVisible();
+  await expect(page.getByLabel('Rows per page')).toHaveValue('100');
+  await page.goto('/manage');
+  await expect(page.getByRole('region', { name: 'Managed events' })).toBeVisible();
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().includes('/api/manage/events?page=0&size=20') && response.ok(),
+    ),
+    selectOption(page, page.getByLabel('Rows per page'), '20'),
+  ]);
+});
+
+test('appearance settings preserve drafts, persist on the server, and reset cleanly', async ({
+  page,
+}, testInfo) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (/Content Security Policy|violates.*directive|Refused to/.test(message.text()))
+      errors.push(message.text());
+  });
+  await signIn(page, 'admin@example.test');
+  await page.goto('/admin');
+  await page.getByRole('button', { name: '+ Create user' }).click();
+  await page.getByLabel('Full name').fill('Unsaved form');
+  const trigger = page.getByRole('button', { name: 'Customize appearance' });
+  await trigger.click();
+  const drawer = page.getByRole('dialog', { name: 'Appearance' });
+  await drawer.getByRole('radio', { name: 'Night', exact: true }).check();
+  await selectOption(page, drawer.getByRole('combobox', { name: 'Font family' }), 'Humanist sans');
+  await selectOption(page, drawer.getByRole('combobox', { name: 'Heading font' }), 'Classic serif');
+  const size = drawer.getByRole('slider', { name: 'Font size' });
+  await size.focus();
+  await size.press('End');
+  await drawer.getByRole('slider', { name: 'Line height' }).focus();
+  await page.keyboard.press('End');
+  await drawer.getByLabel('Custom hex').fill('#7c3aed');
+  await drawer.getByRole('radio', { name: 'Compact', exact: true }).check();
+  await drawer.getByRole('radio', { name: 'Rounded', exact: true }).check();
+  await drawer.getByRole('radio', { name: 'Wide', exact: true }).check();
+  await drawer.getByRole('switch', { name: 'Reduce motion' }).click();
+  await expect(drawer.getByRole('button', { name: 'Done', exact: true })).toHaveCSS(
+    'background-color',
+    'rgb(124, 58, 237)',
+  );
+  await drawer.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(trigger).toBeFocused();
+  await expect(page.getByLabel('Full name')).toHaveValue('Unsaved form');
+  await expect(page.locator('html')).toHaveCSS('font-size', '20px');
+  await expect(page.locator('html')).toHaveCSS('line-height', '36px');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'night');
+  await expect(page.locator('html')).toHaveAttribute('data-font', 'humanist');
+
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'night');
+  await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
+  await expect(page.locator('html')).toHaveAttribute('data-corners', 'round');
+  await expect(page.locator('html')).toHaveAttribute('data-width', 'wide');
+  await expect(page.locator('html')).toHaveCSS('font-size', '20px');
+  await expect(page.getByRole('button', { name: '+ Create user' })).toHaveCSS(
+    'background-color',
+    'rgb(124, 58, 237)',
+  );
+  // The first HTML response carries the preference, before hydration runs.
+  const html = await (await page.request.get('/admin')).text();
+  expect(html).toContain('data-font="humanist"');
+  expect(html).toContain('--color-primary:#7c3aed');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.screenshot({
+    fullPage: true,
+    animations: 'disabled',
+    path: testInfo.outputPath('large-type-mobile.png'),
+  });
+  await trigger.click();
+  await drawer.getByRole('button', { name: 'Reset defaults' }).click();
+  await expect(drawer.getByRole('radio', { name: 'Emerald', exact: true })).toBeChecked();
+  await expect(size).toHaveValue('16');
+  await expect(drawer.getByLabel('Custom hex')).toHaveValue('');
+  await expect(drawer.getByRole('switch', { name: 'Reduce motion' })).not.toBeChecked();
+  await page.screenshot({
+    animations: 'disabled',
+    path: testInfo.outputPath('appearance-mobile.png'),
+  });
+  await page.keyboard.press('Escape');
+  await expect(drawer).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'emerald');
+  await expect(page.locator('html')).toHaveCSS('font-size', '16px');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await trigger.click();
+  await page.screenshot({
+    animations: 'disabled',
+    path: testInfo.outputPath('appearance-desktop.png'),
+  });
+  // A menu inside the drawer remains on top and Escape closes only the menu.
+  const font = drawer.getByRole('combobox', { name: 'Font family' });
+  await font.click();
+  await page.screenshot({
+    animations: 'disabled',
+    path: testInfo.outputPath('dropdown-desktop.png'),
+  });
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeVisible();
+  await expect(font).toBeFocused();
+  await page.keyboard.press('Escape');
+  await page.screenshot({ animations: 'disabled', path: testInfo.outputPath('users-desktop.png') });
+  // Native dialogs keep keyboard focus inside, restore it on dismissal, and lock page scrolling.
+  await trigger.click();
+  const done = drawer.getByRole('button', { name: 'Done', exact: true });
+  await done.focus();
+  // Native dialogs make background controls inert; browser chrome can still receive Tab focus.
+  await trigger.evaluate((element) => element.focus());
+  await expect(done).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(drawer.getByRole('button', { name: 'Reset defaults' })).toBeFocused();
+  await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
+  await page.mouse.click(20, 200);
+  await expect(drawer).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+
+  expect(errors).toEqual([]);
+});
+
+test('dropdown keyboard selection and large text remain usable on a narrow screen', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.goto('/signin');
+  await page.getByRole('button', { name: 'Customize appearance' }).click();
+  const drawer = page.getByRole('dialog', { name: 'Appearance' });
+  const font = drawer.getByRole('combobox', { name: 'Font family' });
+  await font.focus();
+  await font.press('ArrowDown');
+  await expect(page.getByRole('option', { name: 'System sans', exact: true })).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(page.getByRole('option', { name: 'Monospace', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(font).toHaveValue('mono');
+  await drawer.getByRole('slider', { name: 'Font size' }).focus();
+  await page.keyboard.press('End');
+  await expect
+    .poll(() => drawer.evaluate((element) => element.scrollWidth))
+    .toBeLessThanOrEqual(320);
+  expect(
+    await drawer.locator('.drawer-body').evaluate((element) => element.scrollWidth),
+  ).toBeLessThanOrEqual(320);
+  await drawer.getByLabel('Custom hex').fill('#ffffgg');
+  await expect(drawer.getByLabel('Custom hex')).toHaveAttribute('aria-invalid', 'true');
+  await drawer.getByLabel('Custom hex').fill('#ffffff');
+  await expect(drawer.getByRole('button', { name: 'Done', exact: true })).toHaveCSS(
+    'color',
+    'rgb(0, 0, 0)',
+  );
+  await drawer.getByRole('button', { name: 'Done', exact: true }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await expect(page.getByLabel('Email address')).toBeVisible();
 });

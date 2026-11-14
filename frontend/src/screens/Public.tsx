@@ -1,19 +1,27 @@
 'use client';
+import {
+  GatherHeading,
+  GatherText,
+  GatherCard,
+  GatherAlert,
+  GatherButton,
+  GatherInput,
+  GatherLabel,
+  GatherForm,
+  GatherLink,
+  GatherBadge,
+  GatherError,
+  GatherLoading,
+  GatherPagination,
+} from '../components/ui';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { api, post } from '../api';
 import { useAuth } from '../auth';
-import {
-  Badge,
-  dateTime,
-  ErrorBox,
-  EventCard,
-  Loading,
-  Pager,
-  useTimezone,
-  useResource,
-} from '../ui';
+import { EventCard } from '../components/events/EventCard';
+import { GatherScene } from '../components/brand/GatherScene';
+import { useResource } from '../hooks/useResource';
+import { dateTime, useTimezone } from '../lib/dates';
 import type { Event, Page, Registration } from '../types';
 export function Browse() {
   const timezone = useTimezone();
@@ -26,60 +34,53 @@ export function Browse() {
   const q = params.get('q') || '';
   const rawPage = Number(params.get('page') || 0);
   const page = Number.isInteger(rawPage) && rawPage >= 0 ? rawPage : 0;
+  const requestedSize = Number(params.get('size') || 12);
+  const pageSize = [12, 24, 48, 96].includes(requestedSize) ? requestedSize : 12;
   const [search, setSearch] = useState(q);
   useEffect(() => setSearch(q), [q]);
-  const resource = useResource(`events:${q}:${page}`, () =>
-    api<Page<Event>>(`/events?q=${encodeURIComponent(q)}&page=${page}`),
+  const resource = useResource(`events:${q}:${page}:${pageSize}`, () =>
+    api<Page<Event>>(`/events?q=${encodeURIComponent(q)}&page=${page}&size=${pageSize}`),
   );
   return (
     <>
-      <section className="hero">
-        <div>
-          <p className="eyebrow">MAKE ROOM FOR A LITTLE CONNECTION</p>
-          <h1>
-            Good things happen
-            <br />
-            when we <em>gather.</em>
-          </h1>
-          <p>
-            Find your next experience. Meet your people.
-            <br />
-            Be part of something close to home.
-          </p>
-          <a className="button" href="#discover">
-            Explore events <span>↘</span>
-          </a>
-        </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="sun" />
-          <div className="arch arch-one" />
-          <div className="arch arch-two" />
-          <span className="hero-stamp">
-            A place for
-            <br />
-            <b>everyone.</b>
-          </span>
-          <span className="hero-dot" />
+      <section className="hero discovery-hero" aria-labelledby="discovery-heading">
+        <div className="hero-content">
+          <div className="discovery-intro">
+            <GatherText className="small">Out there, together</GatherText>
+            <GatherHeading level={1} id="discovery-heading">
+              Good things happen
+              <br />
+              when we <em>gather.</em>
+            </GatherHeading>
+            <GatherText>
+              Find your next experience. Meet your people.
+              <br />
+              Be part of something close to home.
+            </GatherText>
+            <GatherLink variant="primary" href="#discover">
+              Explore events <span>↘</span>
+            </GatherLink>
+          </div>
+          <GatherScene />
         </div>
       </section>
       <section id="discover">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">OUT THERE, TOGETHER</p>
-            <h2>Find your next gathering</h2>
+            <GatherHeading level={2}>Find your next gathering</GatherHeading>
           </div>
           <span className="muted">Upcoming · General admission</span>
         </div>
-        <form
+        <GatherForm
           className="search"
           role="search"
           onSubmit={(e) => {
             e.preventDefault();
-            setParams(search ? { q: search } : {});
+            setParams({ q: search, size: String(pageSize) });
           }}
         >
-          <label htmlFor="search">Search events</label>
-          <input
+          <GatherLabel htmlFor="search">Search events</GatherLabel>
+          <GatherInput
             id="search"
             type="search"
             maxLength={200}
@@ -87,45 +88,52 @@ export function Browse() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button>Search</button>
-        </form>
-        <p className="timezone">All times shown in {timezone}.</p>
-        <ErrorBox error={resource.error} />
+          <GatherButton>Search</GatherButton>
+        </GatherForm>
+        <GatherText className="small muted">All times shown in {timezone}.</GatherText>
+        <GatherError error={resource.error} />
         {Boolean(resource.error) && (
-          <button className="secondary" onClick={resource.reload}>
+          <GatherButton variant="secondary" onClick={resource.reload}>
             Try again
-          </button>
+          </GatherButton>
         )}
-        {resource.loading && <Loading />}
+        {resource.loading && <GatherLoading />}
         {resource.data && (
           <>
             {resource.data.content.length ? (
               <div className="event-grid">
-                {resource.data.content.map((event, i) => (
-                  <EventCard key={event.id} event={event} index={i} />
+                {resource.data.content.map((event) => (
+                  <EventCard key={event.id} event={event} />
                 ))}
               </div>
             ) : (
-              <div className="empty">
-                <h3>No upcoming events found</h3>
-                <p>
+              <div className="card card-border panel empty">
+                <GatherHeading level={3}>No upcoming events found</GatherHeading>
+                <GatherText>
                   {q
                     ? 'Try a different search or clear your filters.'
                     : 'New gatherings will appear here once organizers publish them.'}
-                </p>
+                </GatherText>
                 {q && (
-                  <button
+                  <GatherButton
                     onClick={() => {
                       setSearch('');
-                      setParams({});
+                      setParams({ size: String(pageSize) });
                     }}
                   >
                     Clear search
-                  </button>
+                  </GatherButton>
                 )}
               </div>
             )}
-            <Pager data={resource.data} onPage={(p) => setParams({ q, page: String(p) })} />
+            <GatherPagination
+              data={resource.data}
+              pageSize={pageSize}
+              sizes={[12, 24, 48, 96]}
+              sizeLabel="Events per page"
+              onPage={(p) => setParams({ q, page: String(p), size: String(pageSize) })}
+              onPageSize={(size) => setParams({ q, size: String(size) })}
+            />
           </>
         )}
       </section>
@@ -155,29 +163,22 @@ export function EventDetails() {
   const event = resource.data;
   return (
     <>
-      <Link className="back" href="/">
+      <GatherLink variant="ghost" className="btn-sm" href="/">
         ← All events
-      </Link>
-      <ErrorBox error={resource.error} />
-      {resource.loading && <Loading />}
+      </GatherLink>
+      <GatherError error={resource.error} />
+      {resource.loading && <GatherLoading />}
       {event && (
         <div className="detail-grid">
           <article>
-            <Badge status={event.status} />
-            <h1>{event.title}</h1>
-            <p className="lead">Hosted by {event.organizerName}</p>
-            <div className="detail-art" aria-hidden="true">
-              <span>
-                Come for the experience.
-                <br />
-                <em>Stay for the connection.</em>
-              </span>
-            </div>
-            <h2>About this gathering</h2>
-            <p className="prose">{event.description}</p>
+            <GatherBadge status={event.status} />
+            <GatherHeading level={1}>{event.title}</GatherHeading>
+            <GatherText className="muted">Hosted by {event.organizerName}</GatherText>
+            <GatherHeading level={2}>About this gathering</GatherHeading>
+            <GatherText className="event-description">{event.description}</GatherText>
           </article>
-          <aside className="panel">
-            <h2>The details</h2>
+          <GatherCard as="aside" className="panel">
+            <GatherHeading level={2}>The details</GatherHeading>
             <dl>
               <dt>When</dt>
               <dd>
@@ -192,36 +193,38 @@ export function EventDetails() {
               <dt>Admission</dt>
               <dd>General admission · No seat limit</dd>
             </dl>
-            <ErrorBox error={error} />
+            <GatherError error={error} />
             {registered ? (
-              <div role="status" className="banner success">
-                You’re registered. <Link href="/registrations">View your registrations →</Link>
-              </div>
+              <GatherAlert role="status" tone="success">
+                You’re registered.{' '}
+                <GatherLink href="/registrations">View your registrations →</GatherLink>
+              </GatherAlert>
             ) : event.status !== 'PUBLISHED' ? (
-              <p className="banner">
+              <GatherAlert>
                 Registration is unavailable for this {event.status.toLowerCase()} event.
-              </p>
+              </GatherAlert>
             ) : new Date(event.startsAt).getTime() <= Date.now() ? (
-              <p className="banner">Registration has closed. This event has already started.</p>
+              <GatherAlert>Registration has closed. This event has already started.</GatherAlert>
             ) : user ? (
-              <button className="full" disabled={busy} onClick={() => void register()}>
+              <GatherButton className="btn-block" disabled={busy} onClick={() => void register()}>
                 {busy ? 'Registering…' : 'Register for this event'}
-              </button>
+              </GatherButton>
             ) : (
-              <Link
-                className="button full"
+              <GatherLink
+                variant="primary"
+                className="btn-block"
                 href={'/signin?next=' + encodeURIComponent('/events/' + id)}
               >
                 Sign in to register
-              </Link>
+              </GatherLink>
             )}
-            <p className="small muted">You can cancel before the event begins.</p>
+            <GatherText className="small muted">You can cancel before the event begins.</GatherText>
             {user &&
               (user.role === 'ADMIN' ||
                 (user.role === 'ORGANIZER' && user.id === event.organizerId)) && (
-                <Link href={'/manage/events/' + id}>Manage event →</Link>
+                <GatherLink href={'/manage/events/' + id}>Manage event →</GatherLink>
               )}
-          </aside>
+          </GatherCard>
         </div>
       )}
     </>
