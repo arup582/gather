@@ -1,6 +1,7 @@
+'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { usePathname, useRouter } from 'next/navigation';
 import { api, ApiError, message } from './api';
 import type { User } from './types';
 interface Auth {
@@ -62,10 +63,13 @@ export function Protected({
   admin?: boolean;
 }) {
   const { user, loading } = useAuth();
-  const location = useLocation();
+  const pathname = usePathname();
+  const router = useRouter();
+  useEffect(() => {
+    if (!loading && !user) router.replace('/signin?next=' + encodeURIComponent(pathname));
+  }, [loading, user, pathname, router]);
   if (loading) return <p role="status">Loading your account…</p>;
-  if (!user)
-    return <Navigate to={'/signin?next=' + encodeURIComponent(location.pathname)} replace />;
+  if (!user) return <p role="status">Redirecting to sign in…</p>;
   if ((manager && user.role === 'ATTENDEE') || (admin && user.role !== 'ADMIN'))
     return (
       <section className="empty">

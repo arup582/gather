@@ -1,6 +1,6 @@
 # Gather
 
-Gather manages general-admission events, attendee registrations, and organizer check-in. It has a Spring Boot API, a React frontend, and a PostgreSQL database.
+Gather manages general-admission events, attendee registrations, and organizer check-in. It has a Spring Boot API, a Next.js frontend, and a PostgreSQL database.
 
 ## Features
 
@@ -22,9 +22,30 @@ Authorization and event ownership are enforced by the API. Sign-up creates atten
 | PostgreSQL | 16 for the native scripts; 17 for Docker Compose |
 | Maven | Installed 3.8.x or 3.9.x for native scripts; wrapper included for Docker |
 
-The frontend uses React 19, TypeScript 5, and Vite 8. Exact dependency versions are recorded in `frontend/package-lock.json`.
+The frontend uses Next.js 16.4.3 App Router, React 19, and TypeScript 5. Exact dependency versions are recorded in `frontend/package-lock.json`.
 
-Choose either Docker or installed local tools. The database volumes are separate; never open a PostgreSQL 17 data directory with PostgreSQL 16.
+Use installed tools for Hertz; Docker is an optional local alternative. The database volumes are separate; never open a PostgreSQL 17 data directory with PostgreSQL 16.
+
+## Run with installed tools
+
+Install the versions listed above and put their executables on PATH. These scripts do not install software or download runtimes. Set `JAVA_HOME` and `MVN` if your tools are elsewhere.
+
+```sh
+sh scripts/local.sh doctor
+sh scripts/local.sh db:start
+sh scripts/local.sh install:frontend
+sh scripts/local.sh backend
+```
+
+In a second terminal, from the same repository:
+
+```sh
+sh scripts/local.sh frontend
+```
+
+The frontend always uses port 3000 and the API uses port 8080, for both native and Docker workflows. The native database uses port 55432. The root `.env` is the only environment file; it holds credentials and optional tool paths such as `MVN` or `JAVA_HOME`. Shell environment variables take precedence over `.env`.
+
+The native workflow stores its database under `.local-runtime/`. Stop the API with Ctrl+C, then run `sh scripts/local.sh db:stop` to stop that database without deleting it. Native scripts require a non-root OS user, or a provisioned `postgres` OS account when invoked as root.
 
 ## Run with Docker
 
@@ -46,30 +67,9 @@ npm ci
 npm run dev
 ```
 
-Open [http://127.0.0.1:5173](http://127.0.0.1:5173). Vite proxies `/api` to the backend on port 8080. Stop Vite before reinstalling dependencies; if its cache becomes stale, restart with `npm run dev -- --force`.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). Next.js proxies `/api` to the backend on port 8080. Run `npm run build` followed by `npm start` in `frontend/` for production mode.
 
 Use `docker compose restart backend` after backend edits. `docker compose down` stops services while retaining database volumes. Avoid `down -v` unless you intend to delete local data.
-
-## Run with installed tools
-
-Install the versions listed above and put their executables on PATH. These scripts do not install software or download runtimes. Set `JAVA_HOME` and `MVN` if your tools are elsewhere.
-
-```sh
-sh scripts/local.sh doctor
-sh scripts/local.sh db:start
-sh scripts/local.sh install:frontend
-sh scripts/local.sh backend
-```
-
-In a second terminal, from the same repository:
-
-```sh
-sh scripts/local.sh frontend
-```
-
-Defaults are frontend port 5173, API port 8080, and database port 55432. Optional `GATHER_WEB_PORT`, `GATHER_API_PORT`, and `GATHER_PG_PORT` can be set in a gitignored `.env.local`. Use the same configuration in both terminals. Shell environment variables take precedence over `.env.local`, which takes precedence over `.env`.
-
-The native workflow stores its database under `.local-runtime/`. Stop the API with Ctrl+C, then run `sh scripts/local.sh db:stop` to stop that database without deleting it. Native scripts require a non-root OS user, or a provisioned `postgres` OS account when invoked as root.
 
 ## Development accounts
 
@@ -82,7 +82,7 @@ The `dev` profile seeds these accounts on the first startup of an empty database
 | `other-organizer@example.test` | Organizer with no initial events |
 | `admin@example.test` | Administrator |
 
-The seed creates sample events and one attendee registration. Restarting does not change account passwords or event dates. Changing `.env` after seeding does not reset existing passwords. Keep `.env`, `.env.local`, `.local-runtime`, and database backups out of source control.
+The seed creates sample events and one attendee registration. Restarting does not change account passwords or event dates. Changing `.env` after seeding does not reset existing passwords. Keep `.env`, `.local-runtime`, and database backups out of source control.
 
 ## Tests
 
@@ -125,7 +125,7 @@ backend/                 Spring Boot application and Maven Wrapper
     registrations/       Registration attempts and cancellation
     attendance/          Check-in records
   src/main/resources/db/migration/
-frontend/                React application, component tests, browser tests
+frontend/                Next.js App Router application, component tests, browser tests
 scripts/                 Local configuration and runtime commands
 docs/                    API, architecture, deployment, and verification notes
 ```
@@ -141,3 +141,5 @@ The backend is a modular monolith. Modules expose services and DTOs; repositorie
 - [Code review](docs/review.md)
 
 There are no capacity limits, waitlists, payments, recurring events, email delivery, password recovery, or file uploads. Sessions live in one backend process and expire on restart. Search uses substring matching, and attendance lists are not paginated. Public deployment requires HTTPS and operational controls such as login rate limiting; these are not supplied by the local development setup.
+
+Next.js uses the installed Node runtime. Vite remains only as tooling for Vitest component tests. Internal npm mirror availability (including Next.js native Linux packages) must still be verified in a restricted sandbox.

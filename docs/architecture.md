@@ -15,7 +15,7 @@ One Spring Boot process, one PostgreSQL database, four business modules. HTTP co
 
 Spring Security handles form login, session ID rotation, password comparison, and POST logout. BCrypt uses cost 12. Passwords have a 12-character minimum and 72-byte UTF-8 maximum, avoiding BCrypt truncation. Email identities are trimmed and normalized to lower case, with a database unique constraint.
 
-Spring Security keeps CSRF protection enabled for every unsafe request, including sign-up, login, and logout. The frontend obtains a masked session-bound token from `/api/auth/csrf` immediately before each mutation. This works with default BREACH protection and token rotation after authentication/logout. Cookies carry sessions; no authentication or CSRF tokens are stored in localStorage. Vite's development proxy preserves the same-origin browser contract.
+Spring Security keeps CSRF protection enabled for every unsafe request, including sign-up, login, and logout. The frontend obtains a masked session-bound token from `/api/auth/csrf` immediately before each mutation. This works with default BREACH protection and token rotation after authentication/logout. Cookies carry sessions; no authentication or CSRF tokens are stored in localStorage. Next.js rewrites proxy `/api` in development and production, preserving the same-origin browser contract.
 
 Each controller resolves an `Actor` through `IdentityService.current`. It re-reads enabled status and role on every operation, so a role stored in an old session cannot preserve revoked privileges. Services apply manager/admin and event-ownership checks; frontend visibility is only a convenience. Private registration cancellation returns 404 for another attendee's ID.
 
@@ -38,3 +38,7 @@ Times are Java `Instant` values, SQL `timestamptz`, and ISO-8601 JSON. A UTC `Cl
 ## Testing boundaries
 
 Unit tests cover event state transitions; architecture tests cover Java module dependencies. `ApplicationIT` starts the actual Spring context and security filters against native PostgreSQL 16 in the default workflow (or a separately provisioned PostgreSQL test instance), exercising real migrations, constraints, rollback, and concurrent transactions. It uses a low-cost test-only BCrypt encoder to keep tests fast. Frontend component tests isolate HTTP responses to check interactions and error states; Playwright workflows call the real backend with persisted data. The app itself contains no mock API or fallback fixtures.
+
+## Frontend routing
+
+Next.js App Router owns the routes in `frontend/src/app`. A shared layout supplies authentication and navigation; interactive screens live in `src/screens` as client components. Spring Boot remains responsible for data, sessions, CSRF and authorization. The frontend needs a Node server; it is not a static HTML export.

@@ -2,7 +2,7 @@ import { test, expect, request } from '@playwright/test';
 import type { Page, APIRequestContext } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 const seedPassword = process.env.DEV_SEED_PASSWORD;
-const webURL = `http://127.0.0.1:${process.env.GATHER_WEB_PORT || '5173'}`;
+const webURL = 'http://127.0.0.1:3000';
 async function signIn(page: Page, email: string) {
   if (!seedPassword)
     throw new Error('Set DEV_SEED_PASSWORD for the explicit development seed accounts');
@@ -34,6 +34,7 @@ test('visitor signs up, registers, cancels, registers again, and signs out', asy
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
   await page.locator('.event-card h2 a').first().click();
+  await expect(page).toHaveURL(/\/events\/[^/]+$/);
   const detail = page.url();
   await page.getByRole('button', { name: 'Register for this event' }).click();
   await expect(page.locator('.banner[role="status"]')).toContainText('You’re registered');
@@ -125,4 +126,31 @@ test('public layout remains usable at a mobile viewport', async ({ page }) => {
   await page.getByLabel('Search events').fill('no matching event ' + randomUUID());
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page.getByText('No upcoming events found')).toBeVisible();
+});
+
+test.describe('Next routing', () => {
+  test.use({ timezoneId: 'America/New_York' });
+  test('Next routes preserve search history and protected deep links', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto('/?q=music');
+    await expect(page.getByLabel('Search events')).toHaveValue('music');
+    await page.getByLabel('Search events').fill('art');
+    await page.getByRole('button', { name: 'Search', exact: true }).click();
+    await expect(page).toHaveURL(/q=art/);
+    await page.goBack();
+    await expect(page.getByLabel('Search events')).toHaveValue('music');
+    await page.goto('/registrations');
+    await expect(page).toHaveURL(/\/signin\?next=%2Fregistrations/);
+    await page.getByLabel('Email address').fill('attendee@example.test');
+    await page.getByLabel('Password', { exact: true }).fill(seedPassword!);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await expect(page).toHaveURL(/\/registrations$/);
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
+    const missing = await page.goto('/does-not-exist');
+    expect(missing?.status()).toBe(404);
+    await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
+    expect(errors).toEqual([]);
+  });
 });

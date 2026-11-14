@@ -1,6 +1,6 @@
 # HTTP API
 
-Base URL in development: `http://127.0.0.1:5173/api` through the frontend proxy, or `http://127.0.0.1:8080/api` for a direct HTTP client. Do not mix hosts or cookie jars. Content type is JSON except form login. IDs are UUIDs; timestamps are ISO-8601 with an explicit offset.
+Base URL in development: `http://127.0.0.1:3000/api` through the frontend proxy, or `http://127.0.0.1:8080/api` for a direct HTTP client. Do not mix hosts or cookie jars. Content type is JSON except form login. IDs are UUIDs; timestamps are ISO-8601 with an explicit offset.
 
 ## Session and CSRF sequence
 

@@ -7,7 +7,6 @@ import { spawnSync } from 'node:child_process';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 process.chdir(root);
-if (existsSync('.env.local')) process.loadEnvFile(resolve(root, '.env.local'));
 if (existsSync('.env')) process.loadEnvFile(resolve(root, '.env'));
 const env = { ...process.env };
 const command = process.argv[2] || 'help';
@@ -123,7 +122,7 @@ try {
     fail('Use Node 22.21 or later in the Node 22 line. Read .nvmrc.');
   if (command === 'help') {
     console.log('node scripts/local.mjs <doctor|db:start|db:stop|backend|test:backend|install:frontend|frontend|test:frontend|test:browser>');
-    console.log('Uses installed tools only. Set MVN or JAVA_HOME when needed; optional GATHER_PG_PORT, GATHER_API_PORT and GATHER_WEB_PORT.');
+    console.log('Uses installed tools only. Set MVN or JAVA_HOME when needed; optional GATHER_PG_PORT. API: 8080; frontend: 3000.');
   } else if (command === 'doctor') {
     const maven = javaEnvironment();
     console.log(`Node ${process.versions.node}; Java 21; ${capture(maven, ['--version']).split('\n')[0]}; ${capture(postgres().control, ['--version'])}`);
@@ -138,7 +137,7 @@ try {
       const maven = command === 'db:start' ? null : javaEnvironment();
       dbStart();
       if (command === 'backend') {
-        env.SPRING_PROFILES_ACTIVE = 'dev'; env.SERVER_PORT = env.GATHER_API_PORT || '8080';
+        env.SPRING_PROFILES_ACTIVE = 'dev'; env.SERVER_PORT = '8080';
         env.SERVER_ADDRESS = '127.0.0.1';
         call(maven, ['-B', 'spring-boot:run'], { cwd: resolve(root, 'backend') });
       } else if (command === 'test:backend') {

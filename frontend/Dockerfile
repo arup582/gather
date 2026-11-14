@@ -1,5 +1,16 @@
-# Build frontend/dist using nvm + npm ci + npm run build before building this image.
-FROM nginxinc/nginx-unprivileged:1.30-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY dist /usr/share/nginx/html
-EXPOSE 8080
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+ARG GATHER_API_HOST=backend
+ENV GATHER_API_HOST=$GATHER_API_HOST
+RUN npm run build
+
+FROM node:22-alpine
+WORKDIR /app
+ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3000
+COPY --from=build --chown=node:node /app/.next/standalone ./
+USER node
+EXPOSE 3000
+CMD ["node", "server.js"]

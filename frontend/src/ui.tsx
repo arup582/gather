@@ -1,8 +1,14 @@
+'use client';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+
 import { ApiError, message } from './api';
 import type { Page, Event } from './types';
-export const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+export function useTimezone() {
+  const [zone, setZone] = useState('your local timezone');
+  useEffect(() => setZone(Intl.DateTimeFormat().resolvedOptions().timeZone), []);
+  return zone;
+}
 export const dateTime = (date: string) =>
   new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
     new Date(date),
@@ -55,7 +61,7 @@ export function ErrorBox({ error }: { error: unknown }) {
       {error instanceof ApiError && error.status === 401 && (
         <>
           {' '}
-          <Link to="/signin">Sign in again</Link>
+          <Link href="/signin">Sign in again</Link>
         </>
       )}
     </div>
@@ -117,12 +123,12 @@ export function EventCard({ event, index = 0 }: { event: Event; index?: number }
           {d.toLocaleDateString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' })}
         </p>
         <h2>
-          <Link to={'/events/' + event.id}>{event.title}</Link>
+          <Link href={'/events/' + event.id}>{event.title}</Link>
         </h2>
         <p className="muted">{event.venue}</p>
         <div className="card-bottom">
           <span>Hosted by {event.organizerName}</span>
-          <Link aria-label={'View ' + event.title} to={'/events/' + event.id}>
+          <Link aria-label={'View ' + event.title} href={'/events/' + event.id}>
             ↗
           </Link>
         </div>

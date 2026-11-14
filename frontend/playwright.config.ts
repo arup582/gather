@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 const envFile = resolve(import.meta.dirname, '../.env');
 if (existsSync(envFile)) process.loadEnvFile(envFile);
-const webURL = `http://127.0.0.1:${process.env.GATHER_WEB_PORT || '5173'}`;
+const webURL = 'http://127.0.0.1:3000';
 const executablePath =
   process.env.PLAYWRIGHT_EXECUTABLE_PATH ||
   [
@@ -25,7 +25,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev',
+    command: process.env.PLAYWRIGHT_PRODUCTION ? 'npm start' : 'npm run dev',
     url: webURL,
     reuseExistingServer: true,
     timeout: 30000,

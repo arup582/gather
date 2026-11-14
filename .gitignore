@@ -22,3 +22,6 @@ test-results/
 
 .local-backups/
 .local-runtime/
+
+.next/
+next-env.d.ts

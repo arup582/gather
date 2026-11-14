@@ -1,11 +1,28 @@
+'use client';
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import Link from 'next/link';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { api, post } from '../api';
 import { useAuth } from '../auth';
-import { Badge, dateTime, ErrorBox, EventCard, Loading, Pager, timezone, useResource } from '../ui';
+import {
+  Badge,
+  dateTime,
+  ErrorBox,
+  EventCard,
+  Loading,
+  Pager,
+  useTimezone,
+  useResource,
+} from '../ui';
 import type { Event, Page, Registration } from '../types';
 export function Browse() {
-  const [params, setParams] = useSearchParams();
+  const timezone = useTimezone();
+  const params = useSearchParams();
+  const router = useRouter();
+  const setParams = (values: Record<string, string>) => {
+    const query = new URLSearchParams(values).toString();
+    router.push(query ? '/?' + query : '/', { scroll: false });
+  };
   const q = params.get('q') || '';
   const rawPage = Number(params.get('page') || 0);
   const page = Number.isInteger(rawPage) && rawPage >= 0 ? rawPage : 0;
@@ -116,7 +133,8 @@ export function Browse() {
   );
 }
 export function EventDetails() {
-  const { id } = useParams();
+  const timezone = useTimezone();
+  const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const resource = useResource(`event:${id}:${user?.id}`, () => api<Event>('/events/' + id));
   const [busy, setBusy] = useState(false);
@@ -137,7 +155,7 @@ export function EventDetails() {
   const event = resource.data;
   return (
     <>
-      <Link className="back" to="/">
+      <Link className="back" href="/">
         ← All events
       </Link>
       <ErrorBox error={resource.error} />
@@ -177,7 +195,7 @@ export function EventDetails() {
             <ErrorBox error={error} />
             {registered ? (
               <div role="status" className="banner success">
-                You’re registered. <Link to="/registrations">View your registrations →</Link>
+                You’re registered. <Link href="/registrations">View your registrations →</Link>
               </div>
             ) : event.status !== 'PUBLISHED' ? (
               <p className="banner">
@@ -192,7 +210,7 @@ export function EventDetails() {
             ) : (
               <Link
                 className="button full"
-                to={'/signin?next=' + encodeURIComponent('/events/' + id)}
+                href={'/signin?next=' + encodeURIComponent('/events/' + id)}
               >
                 Sign in to register
               </Link>
@@ -201,7 +219,7 @@ export function EventDetails() {
             {user &&
               (user.role === 'ADMIN' ||
                 (user.role === 'ORGANIZER' && user.id === event.organizerId)) && (
-                <Link to={'/manage/events/' + id}>Manage event →</Link>
+                <Link href={'/manage/events/' + id}>Manage event →</Link>
               )}
           </aside>
         </div>

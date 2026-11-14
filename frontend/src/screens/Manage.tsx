@@ -1,5 +1,7 @@
+'use client';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter, useParams } from 'next/navigation';
 import { api, post } from '../api';
 import { useAuth } from '../auth';
 import {
@@ -9,11 +11,12 @@ import {
   Loading,
   localInput,
   Pager,
-  timezone,
+  useTimezone,
   useResource,
 } from '../ui';
 import type { Attendance, Event, EventInput, Page, Registration } from '../types';
 export function ManageEvents() {
+  const timezone = useTimezone();
   const [page, setPage] = useState(0);
   const { user } = useAuth();
   const resource = useResource(`manage:${page}`, () =>
@@ -27,7 +30,7 @@ export function ManageEvents() {
           <h1>{user?.role === 'ADMIN' ? 'All events' : 'Your events'}</h1>
           <p>Create a gathering, welcome your attendees, and make it happen.</p>
         </div>
-        <Link className="button" to="/manage/events/new">
+        <Link className="button" href="/manage/events/new">
           + Create event
         </Link>
       </div>
@@ -63,7 +66,7 @@ export function ManageEvents() {
                         <Badge status={e.status} />
                       </td>
                       <td>
-                        <Link to={'/manage/events/' + e.id}>Manage →</Link>
+                        <Link href={'/manage/events/' + e.id}>Manage →</Link>
                       </td>
                     </tr>
                   ))}
@@ -83,6 +86,7 @@ export function ManageEvents() {
   );
 }
 export function EventForm({ event, onSaved }: { event?: Event; onSaved: (event: Event) => void }) {
+  const timezone = useTimezone();
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
   const [validation, setValidation] = useState('');
@@ -195,20 +199,20 @@ export function EventForm({ event, onSaved }: { event?: Event; onSaved: (event: 
   );
 }
 export function NewEvent() {
-  const navigate = useNavigate();
+  const router = useRouter();
   return (
     <>
-      <Link className="back" to="/manage">
+      <Link className="back" href="/manage">
         ← Your events
       </Link>
       <h1>Create an event</h1>
       <p className="lead">Start with a draft. Only published events appear publicly.</p>
-      <EventForm onSaved={(e) => navigate('/manage/events/' + e.id)} />
+      <EventForm onSaved={(e) => router.push('/manage/events/' + e.id)} />
     </>
   );
 }
 export function ManageEvent() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const resource = useResource(`edit:${id}`, () => api<Event>('/events/' + id));
   const [error, setError] = useState<unknown>();
@@ -246,7 +250,7 @@ export function ManageEvent() {
     );
   return (
     <>
-      <Link className="back" to="/manage">
+      <Link className="back" href="/manage">
         ← Your events
       </Link>
       <ErrorBox error={error || resource.error} />
@@ -278,7 +282,7 @@ export function ManageEvent() {
                   Cancel event
                 </button>
               )}
-              <Link to={'/events/' + id}>View event ↗</Link>
+              <Link href={'/events/' + id}>View event ↗</Link>
             </div>
           </div>
           <EventForm
@@ -296,6 +300,7 @@ export function ManageEvent() {
   );
 }
 function Attendees({ event }: { event: Event }) {
+  const timezone = useTimezone();
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState<unknown>();

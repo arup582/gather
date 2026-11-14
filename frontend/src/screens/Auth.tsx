@@ -1,13 +1,15 @@
+'use client';
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api, post } from '../api';
 import { useAuth } from '../auth';
 import { ErrorBox } from '../ui';
 export function AuthPage({ signup = false }: { signup?: boolean }) {
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
-  const navigate = useNavigate();
-  const [params] = useSearchParams();
+  const router = useRouter();
+  const params = useSearchParams();
   const { refresh } = useAuth();
   const candidate = params.get('next') || '/';
   const next = candidate.startsWith('/') && !candidate.startsWith('//') ? candidate : '/';
@@ -23,7 +25,7 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
         await post('/auth/signup', { email, password, displayName: data.get('displayName') });
       await api('/auth/login', { method: 'POST', body: new URLSearchParams({ email, password }) });
       await refresh();
-      navigate(next, { replace: true });
+      router.replace(next);
     } catch (e) {
       setError(e);
     } finally {
@@ -84,7 +86,7 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
         </form>
         <p className="small">
           {signup ? 'Already part of the community? ' : 'New to Gather? '}
-          <Link to={(signup ? '/signin' : '/signup') + '?next=' + encodeURIComponent(next)}>
+          <Link href={(signup ? '/signin' : '/signup') + '?next=' + encodeURIComponent(next)}>
             {signup ? 'Sign in' : 'Create an account'}
           </Link>
         </p>

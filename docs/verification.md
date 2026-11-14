@@ -15,3 +15,20 @@ Integration tests run against a separate native PostgreSQL database and include 
 The new backend regression cases run in the integration-test application context. The existing development process was not restarted during review. Docker images were not rebuilt during this review. No public deployment, external HTTPS setup, load test, or additional browser certification is claimed. Dependency availability in a private package mirror has not been verified.
 
 See [review findings](review.md) and [startup commands](../README.md).
+
+## Next.js migration — 14 November 2026
+
+Migrated to Next.js 16.4.3 App Router and removed React Router and the Vite application entry point. Vite remains a Vitest dependency. Native verification used Node 22.21, PostgreSQL 16, and installed Chrome on macOS:
+
+- Clean `sh scripts/local.sh install:frontend`: passed; npm reported zero vulnerabilities.
+- `sh scripts/local.sh test:frontend`: 10 component tests, TypeScript route checks, and the standalone production build passed.
+- `PLAYWRIGHT_PRODUCTION=1 sh scripts/local.sh test:browser`: all 6 workflows passed against the real Spring Boot API. Coverage includes signup, registration/cancellation, organizer editing and check-in, administrator role changes, mobile layout, search history, protected redirects, reload/session persistence, and HTTP 404 handling.
+- The routing regression runs in America/New_York to check hydration with a browser timezone different from the build machine.
+
+Next.js 16.4.3 was published on 23 October 2026, avoiding the five-day-old latest patch at migration time. This does not prove availability of it or its transitive/native dependencies in Hertz's private mirrors. Linux sandbox installation and the updated Docker image have not been verified. Browser tests create synthetic records in the local development database. Temporary frontend/backend test processes were stopped afterward; PostgreSQL was left running.
+
+### Fixed ports and one environment file
+
+Standardized the API on 8080 and the frontend on 3000 across native commands, Docker configuration, IntelliJ debug configuration and browser tests. Removed the old application port overrides and consolidated local configuration into the root `.env`; `.env.example` remains a template. Native setup is now the primary README workflow.
+
+Verified the existing API on 8080 returned HTTP 200 from `/api/auth/csrf`. Tool detection, 10 component tests, TypeScript checking, the production build and all 6 production browser workflows passed with the frontend on 3000. The existing backend was left running; the temporary frontend test server was stopped. Docker and Hertz private mirrors were not tested.

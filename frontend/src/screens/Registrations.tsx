@@ -1,9 +1,12 @@
+'use client';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+
 import { api, post } from '../api';
-import { Badge, dateTime, ErrorBox, Loading, Pager, timezone, useResource } from '../ui';
+import { Badge, dateTime, ErrorBox, Loading, Pager, useTimezone, useResource } from '../ui';
 import type { Page, Registration } from '../types';
 export function MyRegistrations() {
+  const timezone = useTimezone();
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState<unknown>();
@@ -52,7 +55,7 @@ export function MyRegistrations() {
                   <div>
                     <Badge status={r.status} />
                     <h2>
-                      <Link to={'/events/' + r.event.id}>{r.event.title}</Link>
+                      <Link href={'/events/' + r.event.id}>{r.event.title}</Link>
                     </h2>
                     <p>
                       {dateTime(r.event.startsAt)} · {r.event.venue}
@@ -87,7 +90,7 @@ export function MyRegistrations() {
             <div className="empty">
               <h2>Your next experience is waiting</h2>
               <p>You haven’t registered for an event yet.</p>
-              <Link className="button" to="/">
+              <Link className="button" href="/">
                 Explore events
               </Link>
             </div>

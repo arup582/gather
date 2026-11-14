@@ -1,14 +1,56 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { act } from '@testing-library/react';
+import { usePathname } from 'next/navigation';
 import { vi } from 'vitest';
 import { AuthProvider } from '../auth';
-import { AuthPage } from '../pages/Auth';
-import { Browse } from '../pages/Public';
-import { MyRegistrations } from '../pages/Registrations';
-import { EventForm } from '../pages/Manage';
+import { AuthPage } from '../screens/Auth';
+import { Browse } from '../screens/Public';
+import { MyRegistrations } from '../screens/Registrations';
+import { EventForm } from '../screens/Manage';
 import { api, ApiError } from '../api';
 import type { Event } from '../types';
+
+const navigation = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  const state = {
+    url: '/',
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    replace: (url: string) => {
+      state.url = url;
+      listeners.forEach((listener) => listener());
+    },
+    push: (url: string) => {
+      state.replace(url);
+    },
+  };
+  return state;
+});
+vi.mock('next/navigation', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const useURL = () => useSyncExternalStore(navigation.subscribe, () => navigation.url);
+  return {
+    useRouter: () => navigation,
+    usePathname: () => new URL(useURL(), 'http://localhost').pathname,
+    useSearchParams: () => new URL(useURL(), 'http://localhost').searchParams,
+    useParams: () => ({}),
+  };
+});
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+beforeEach(() => {
+  navigation.url = '/';
+});
 const user = {
   id: 'u1',
   email: 'user@example.test',
@@ -41,11 +83,7 @@ function fetchMock(handler: (path: string, init?: RequestInit) => Response) {
   });
 }
 function wrap(node: React.ReactNode) {
-  return render(
-    <MemoryRouter>
-      <AuthProvider>{node}</AuthProvider>
-    </MemoryRouter>,
-  );
+  return render(<AuthProvider>{node}</AuthProvider>);
 }
 test('signup submits attendee data and signs in through the actual API client', async () => {
   let signedIn = false;
@@ -169,24 +207,23 @@ test('API errors preserve validation fields and do not silently retry mutations'
 test('protected page redirects anonymous visitors to sign-in', async () => {
   const { Protected } = await import('../auth');
   fetchMock(() => response({ message: 'Please sign in' }, 401));
+  act(() => navigation.replace('/private'));
+  function PrivateRoute() {
+    const path = usePathname();
+    return path === '/private' ? (
+      <Protected>
+        <p>Private details</p>
+      </Protected>
+    ) : (
+      <p>Sign in screen</p>
+    );
+  }
   render(
-    <MemoryRouter initialEntries={['/private']}>
-      <AuthProvider>
-        <Routes>
-          <Route
-            path="/private"
-            element={
-              <Protected>
-                <p>Private details</p>
-              </Protected>
-            }
-          />
-          <Route path="/signin" element={<p>Sign in screen</p>} />
-        </Routes>
-      </AuthProvider>
-    </MemoryRouter>,
+    <AuthProvider>
+      <PrivateRoute />
+    </AuthProvider>,
   );
-  expect(await screen.findByText('Sign in screen')).toBeInTheDocument();
+  await waitFor(() => expect(navigation.url).toBe('/signin?next=%2Fprivate'));
   expect(screen.queryByText('Private details')).not.toBeInTheDocument();
 });
 
@@ -207,21 +244,9 @@ test('connection retry clears the banner when an anonymous session is reachable'
 
 test('browser back restores the search input as well as its results', async () => {
   fetchMock(() => response({ content: [], page: 0, totalPages: 0, totalElements: 0 }));
-  function SearchHistory() {
-    const navigate = useNavigate();
-    return (
-      <>
-        <button onClick={() => navigate(-1)}>Back</button>
-        <Browse />
-      </>
-    );
-  }
-  render(
-    <MemoryRouter initialEntries={['/?q=music', '/?q=art']}>
-      <SearchHistory />
-    </MemoryRouter>,
-  );
+  act(() => navigation.replace('/?q=art'));
+  render(<Browse />);
   expect(screen.getByLabelText('Search events')).toHaveValue('art');
-  await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+  act(() => navigation.replace('/?q=music'));
   await waitFor(() => expect(screen.getByLabelText('Search events')).toHaveValue('music'));
 });
