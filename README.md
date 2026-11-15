@@ -27,7 +27,7 @@ The frontend uses Next.js 16.4.3 App Router, React 19, and TypeScript 5. Exact d
 
 Shared Gather components use daisyUI for tables, pagination controls, dropdowns, forms, and account toggles, with one component per file. daisyUI is the only UI package beyond Next.js and React; controls use native browser interactions. The header’s palette icon opens appearance settings for themes, accent colors, fonts, text size, line height, density, corners, content width, and reduced motion. Preferences persist across reloads. See [frontend structure and theming](docs/frontend.md) for customization.
 
-Use installed tools for Hertz; Docker is an optional local alternative. The database volumes are separate; never open a PostgreSQL 17 data directory with PostgreSQL 16.
+Use installed tools for native development; Docker is an optional local alternative. The database volumes are separate; never open a PostgreSQL 17 data directory with PostgreSQL 16.
 
 ## Run with installed tools
 
@@ -145,4 +145,4 @@ The backend is a modular monolith. Modules expose services and DTOs; repositorie
 
 There are no capacity limits, waitlists, payments, recurring events, email delivery, password recovery, or file uploads. Sessions live in one backend process and expire on restart. Search uses substring matching, and attendance lists are not paginated. Public deployment requires HTTPS and operational controls such as login rate limiting; these are not supplied by the local development setup.
 
-Next.js uses the installed Node runtime. Vite remains only as tooling for Vitest component tests. Internal npm mirror availability (including Next.js native Linux packages) must still be verified in a restricted sandbox.
+Next.js uses the installed Node runtime. Vite remains only as tooling for Vitest component tests. If you use a private npm registry, verify that it provides Next.js and its platform-specific native packages.

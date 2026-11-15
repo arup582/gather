@@ -25,10 +25,10 @@ Migrated to Next.js 16.4.3 App Router and removed React Router and the Vite appl
 - `PLAYWRIGHT_PRODUCTION=1 sh scripts/local.sh test:browser`: all 6 workflows passed against the real Spring Boot API. Coverage includes signup, registration/cancellation, organizer editing and check-in, administrator role changes, mobile layout, search history, protected redirects, reload/session persistence, and HTTP 404 handling.
 - The routing regression runs in America/New_York to check hydration with a browser timezone different from the build machine.
 
-Next.js 16.4.3 was published on 23 October 2026, avoiding the five-day-old latest patch at migration time. This does not prove availability of it or its transitive/native dependencies in Hertz's private mirrors. Linux sandbox installation and the updated Docker image have not been verified. Browser tests create synthetic records in the local development database. Temporary frontend/backend test processes were stopped afterward; PostgreSQL was left running.
+Linux installation, private package registry availability, and the updated Docker image have not been verified. Browser tests create synthetic records in the local development database. Temporary frontend/backend test processes were stopped afterward; PostgreSQL was left running.
 
 ### Fixed ports and one environment file
 
 Standardized the API on 8080 and the frontend on 3000 across native commands, Docker configuration, IntelliJ debug configuration and browser tests. Removed the old application port overrides and consolidated local configuration into the root `.env`; `.env.example` remains a template. Native setup is now the primary README workflow.
 
-Verified the existing API on 8080 returned HTTP 200 from `/api/auth/csrf`. Tool detection, 10 component tests, TypeScript checking, the production build and all 6 production browser workflows passed with the frontend on 3000. The existing backend was left running; the temporary frontend test server was stopped. Docker and Hertz private mirrors were not tested.
+Verified the existing API on 8080 returned HTTP 200 from `/api/auth/csrf`. Tool detection, 10 component tests, TypeScript checking, the production build and all 6 production browser workflows passed with the frontend on 3000. The existing backend was left running; the temporary frontend test server was stopped. Docker and private package registries were not tested.

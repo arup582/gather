@@ -171,7 +171,15 @@ dd {
   margin: 2rem auto;
 }
 .auth-layout {
-  max-width: 32rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 3rem;
+  max-width: 64rem;
+}
+.auth-intro .gather-scene {
+  width: min(100%, 26rem);
+  margin: 1.5rem auto 0;
 }
 .attendees {
   margin-top: 2rem;
@@ -241,8 +249,16 @@ dd {
     display: none;
   }
   .form-row,
-  .detail-grid {
+  .detail-grid,
+  .auth-layout {
     grid-template-columns: 1fr;
+  }
+  .auth-layout {
+    gap: 1.5rem;
+  }
+  .auth-intro .gather-scene {
+    max-height: 10rem;
+    margin-top: 1rem;
   }
   .form-row {
     gap: 0;

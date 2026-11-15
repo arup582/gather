@@ -240,7 +240,8 @@ test('tables paginate on the server and retain controls for a single page', asyn
   await signIn(page, 'admin@example.test');
   await page.goto('/admin');
   const users = await (await page.request.get('/api/admin/users?size=100')).json();
-  for (let index = users.totalElements; index < 12; index++) {
+  // Three 10-row pages keep Last page enabled after advancing to page two.
+  for (let index = users.totalElements; index < 21; index++) {
     const created = await mutation(page.request, '/admin/users', {
       displayName: `Pagination user ${index}`,
       email: `pagination-${randomUUID()}@example.test`,
@@ -258,8 +259,10 @@ test('tables paginate on the server and retain controls for a single page', asyn
     page.getByRole('button', { name: 'Next page', exact: true }).click(),
   ]);
   await expect(page.getByRole('navigation', { name: 'Pagination' })).toContainText('Page 2 of');
+  await expect(page.getByRole('button', { name: 'Last page' })).toBeEnabled();
   await page.getByRole('button', { name: 'Last page' }).click();
   await expect(page.getByRole('button', { name: 'Next page', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Last page' })).toBeDisabled();
   await page.getByLabel('Go to page').fill('1');
   await page.getByRole('button', { name: 'Go', exact: true }).click();
   await expect(page.getByRole('button', { name: 'First page' })).toBeDisabled();

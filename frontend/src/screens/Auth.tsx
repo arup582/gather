@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, post } from '../api';
 import { useAuth } from '../auth';
+import { GatherScene } from '../components/brand/GatherScene';
 export function AuthPage({ signup = false }: { signup?: boolean }) {
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
@@ -43,7 +44,7 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
   }
   return (
     <div className="auth-layout">
-      <div>
+      <div className="auth-intro">
         <GatherHeading level={1}>
           {signup ? 'Your people are out there.' : 'Welcome back to your community.'}
         </GatherHeading>
@@ -52,6 +53,7 @@ export function AuthPage({ signup = false }: { signup?: boolean }) {
           <br />
           Create something worth showing up for.
         </GatherText>
+        <GatherScene />
       </div>
       <GatherCard as="section">
         <GatherHeading level={2}>{signup ? 'Create an account' : 'Sign in'}</GatherHeading>

@@ -30,7 +30,7 @@ The remaining application CSS has distinct responsibilities:
 - `theme/appearance.css`: settings-panel layout and previews using the actual theme palettes.
 - `theme/daisyui.css`: vendor imports only, including the palettes formerly in `palettes.css`.
 
-daisyUI intentionally leaves [page layout and typography](https://daisyui.com/docs/layout-and-typography/) to the application. Keep the small shared layout baseline; do not rebuild component skins or move overrides into inline styles. Reusable artwork in `components/brand/` supplies the Gather mark, an illustrated gathering, and ticket motifs. These are local decorative SVGs using daisyUI color variables, so they follow palette and accent changes without image libraries, remote assets, animation, or CSS-drawn artwork.
+daisyUI intentionally leaves [page layout and typography](https://daisyui.com/docs/layout-and-typography/) to the application. Keep the small shared layout baseline; do not rebuild component skins or move overrides into inline styles. Reusable artwork in `components/brand/` supplies the Gather mark, an illustrated gathering shared by discovery, sign-in, and account creation, and ticket motifs. These are local decorative SVGs using daisyUI color variables, so they follow palette and accent changes without image libraries, remote assets, animation, or CSS-drawn artwork.
 
 Use a component's props for variants (`variant="secondary"`, `tone="success"`, `panel` on a form) instead of overriding its colors or interaction states in screen CSS. To add a palette, import its stylesheet in `theme/daisyui.css` and register it in `theme/config.ts`.
 
